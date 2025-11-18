@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIPANDU DATA - Agenda & Kalender</title>
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="mobile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page force-light">
+  <nav class="top-nav">
+    <div class="nav-left"><button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button><div class="nav-logo"><i class="fas fa-chart-line"></i><span>SIPANDU DATA</span></div></div>
+    <div class="nav-center"><div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari agenda..."></div></div>
+    <div class="nav-right"><div class="nav-item notifications" id="notifications"><i class="fas fa-bell"></i><span class="badge" id="notification-count">2</span><div class="dropdown notification-dropdown" id="notification-dropdown"><div class="dropdown-header"><h3>Notifikasi</h3><button class="mark-all-read">Tandai Semua Dibaca</button></div><div class="notification-list" id="notification-list"></div></div></div><div class="nav-item user-menu" id="user-menu"><div class="user-avatar"><i class="fas fa-user"></i></div><span class="user-name" id="user-name">User</span><i class="fas fa-chevron-down"></i><div class="dropdown user-dropdown" id="user-dropdown"><a href="dashboard.html" class="dropdown-item"><i class="fas fa-home"></i> Dashboard</a><a href="#" class="dropdown-item" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Keluar</a></div></div></div>
+  </nav>
+  <aside class="sidebar" id="sidebar"><div class="sidebar-header"><div class="user-info"><div class="user-avatar"><i class="fas fa-user-tie"></i></div><div class="user-details"><h4 id="sidebar-user-name">User</h4><p id="sidebar-user-role">Role</p></div></div></div><nav class="sidebar-nav"><ul class="nav-menu"><li class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li><li class="nav-item"><a href="datamanagement.html" class="nav-link"><i class="fas fa-database"></i><span>Data Management</span></a></li><li class="nav-item"><a href="reports.html" class="nav-link"><i class="fas fa-chart-bar"></i><span>Laporan & Analisis</span></a></li><li class="nav-item"><a href="forum.html" class="nav-link"><i class="fas fa-comments"></i><span>Forum Diskusi</span></a></li><li class="nav-item active"><a href="calendar.html" class="nav-link"><i class="fas fa-calendar"></i><span>Agenda & Kalender</span></a></li><li class="nav-item"><a href="dinas-status.html" class="nav-link"><i class="fas fa-building"></i><span>Status Dinas</span></a></li><li class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog"></i><span>Pengaturan</span></a></li></ul></nav></aside>
+  <main class="main-content">
+    <div class="page-header"><h1>Agenda & Kalender</h1><p>Kelola jadwal dan event perencanaan</p></div>
+    <div class="calendar-kpi">
+      <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-calendar"></i></div><div><div class="kpi-value" id="cal-kpi-events">0</div><div class="kpi-label">Event Bulan Ini</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon green"><i class="fas fa-users"></i></div><div><div class="kpi-value" id="cal-kpi-meeting">0</div><div class="kpi-label">Meeting</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon red"><i class="fas fa-clock"></i></div><div><div class="kpi-value" id="cal-kpi-deadline">0</div><div class="kpi-label">Deadline</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon purple"><i class="fas fa-bell"></i></div><div><div class="kpi-value" id="cal-kpi-training">0</div><div class="kpi-label">Training</div></div></div>
+    </div>
+    <div class="calendar-grid"><div class="calendar-view"><div class="calendar-controls"><button class="btn btn-outline" id="cal-prev"><i class="fas fa-chevron-left"></i></button><div class="calendar-title" id="cal-title"></div><button class="btn btn-outline" id="cal-next"><i class="fas fa-chevron-right"></i></button><button class="btn btn-primary" id="cal-add"><i class="fas fa-calendar-plus"></i>Tambah Event</button></div><div class="calendar-month" id="calendar-month"></div></div><div class="calendar-events"><div class="card"><div class="card-header"><h3>Event Mendatang</h3></div><div class="card-body" id="event-list"></div></div></div></div>
+  <div class="modal-overlay" id="cal-modal"><div class="modal"><div class="modal-header"><h3>Tambah Event</h3><button class="btn btn-outline btn-sm" id="cal-close">✕</button></div><div class="modal-body"><div class="form-row"><label>Judul</label><input id="cal-title-input" type="text" placeholder="Judul event"></div><div class="form-row"><label>Tanggal</label><input id="cal-day-input" type="number" min="1" max="31" value="1"></div><div class="form-row"><label>Warna</label><input id="cal-color-input" type="color" value="#2563eb"></div></div><div class="modal-footer"><button class="btn btn-secondary" id="cal-cancel">Batal</button><button class="btn btn-primary" id="cal-save">Simpan</button></div></div></div>
+  </main>
+  <script src="app.js"></script><script src="utils.js"></script><script>
+    document.addEventListener('DOMContentLoaded', ()=>{ UIComponents.renderNotifications(); const user=authHandler.getCurrentUser(); document.getElementById('user-name').textContent=user.name; document.getElementById('sidebar-user-name').textContent=user.name; document.getElementById('sidebar-user-role').textContent=user.position; const title=document.getElementById('cal-title'); const grid=document.getElementById('calendar-month'); const prev=document.getElementById('cal-prev'); const next=document.getElementById('cal-next'); const addBtn=document.getElementById('cal-add'); const eventList=document.getElementById('event-list'); let date=new Date(); let events=[{day:5,title:'Rapat Koordinasi',color:'#2563eb'},{day:12,title:'Deadline Upload',color:'#f59e0b'},{day:22,title:'Review Data',color:'#10b981'}]; const render=()=>{ const year=date.getFullYear(); const month=date.getMonth(); const names=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; title.textContent=`${names[month]} ${year}`; const first=new Date(year,month,1).getDay(); const days=new Date(year,month+1,0).getDate(); grid.innerHTML=''; for(let i=0;i<first;i++){ grid.innerHTML += '<div></div>'; } for(let d=1; d<=days; d++){ const isToday=new Date().getDate()===d && new Date().getMonth()===month && new Date().getFullYear()===year; const evs=events.filter(e=> e.day===d); grid.innerHTML += `<div class="calendar-cell ${isToday?'today':''}"><div>${d}</div>${evs.map(e=>`<div class="event-badge" style="background:${e.color}">${e.title}</div>`).join('')}</div>`; } eventList.innerHTML=events.map(e=> `<div class="file-item"><div>${e.title}</div><div class="thread-meta">Tanggal ${e.day}</div></div>`).join(''); }; render(); prev.onclick=()=>{ date.setMonth(date.getMonth()-1); render(); }; next.onclick=()=>{ date.setMonth(date.getMonth()+1); render(); }; const modal=document.getElementById('cal-modal'); const closeBtn=document.getElementById('cal-close'); const cancelBtn=document.getElementById('cal-cancel'); const saveBtn=document.getElementById('cal-save'); const titleInput=document.getElementById('cal-title-input'); const dayInput=document.getElementById('cal-day-input'); const colorInput=document.getElementById('cal-color-input'); const toggle=(show)=>{ modal.style.display=show?'flex':'none'; }; addBtn.onclick=()=> toggle(true); closeBtn.onclick=()=> toggle(false); cancelBtn.onclick=()=> toggle(false); saveBtn.onclick=()=>{ if(!titleInput.value) { Utils.showToast('Judul wajib','error'); return; } events.push({ day:Math.max(1,Math.min(31,parseInt(dayInput.value||'1'))), title:titleInput.value, color:colorInput.value }); render(); toggle(false); Utils.showToast('Event ditambahkan','success'); }; document.getElementById('logout-btn').onclick=(e)=>{e.preventDefault(); authHandler.logout();}; });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const updateKpi=()=>{
+        const badges=[...document.querySelectorAll('#calendar-month .event-badge')];
+        const total=badges.length;
+        const meeting=badges.filter(b=>/meeting|rapat/i.test(b.textContent)).length;
+        const deadline=badges.filter(b=>/deadline/i.test(b.textContent)).length;
+        const training=badges.filter(b=>/training|pelatihan/i.test(b.textContent)).length;
+        document.getElementById('cal-kpi-events').textContent=String(total);
+        document.getElementById('cal-kpi-meeting').textContent=String(meeting);
+        document.getElementById('cal-kpi-deadline').textContent=String(deadline);
+        document.getElementById('cal-kpi-training').textContent=String(training);
+      };
+      updateKpi();
+      document.getElementById('cal-prev').addEventListener('click', ()=> setTimeout(updateKpi, 0));
+      document.getElementById('cal-next').addEventListener('click', ()=> setTimeout(updateKpi, 0));
+      document.getElementById('cal-add').addEventListener('click', ()=> setTimeout(updateKpi, 500));
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const eventList=document.getElementById('event-list');
+      const buildUpcoming=()=>{
+        const cells=[...document.querySelectorAll('#calendar-month .calendar-cell')];
+        const today=new Date();
+        const year=parseInt(document.getElementById('cal-title').textContent.split(' ').pop());
+        const month=cells.length? today.getMonth() : today.getMonth();
+        const items=[];
+        cells.forEach(cell=>{
+          const day=parseInt(cell.firstChild.textContent.trim());
+          const badges=[...cell.querySelectorAll('.event-badge')];
+          badges.forEach(b=> items.push({ day, title:b.textContent, color:b.style.background }));
+        });
+        const upcoming=items.filter(i=> i.day>=today.getDate()).sort((a,b)=> a.day-b.day).slice(0,5);
+        eventList.innerHTML=upcoming.map(e=> `<div class="file-item" style="display:flex;align-items:center;justify-content:space-between;"><div><div>${e.title}</div><div class="thread-meta">${DateUtils.formatDate(new Date(year,month,e.day),{day:'2-digit',month:'short',year:'numeric'})}</div></div><span class="event-badge" style="background:${e.color}">${DateUtils.formatDate(new Date(year,month,e.day),{month:'short'})}</span></div>`).join('');
+      };
+      buildUpcoming();
+      document.getElementById('cal-prev').addEventListener('click', ()=> setTimeout(buildUpcoming, 0));
+      document.getElementById('cal-next').addEventListener('click', ()=> setTimeout(buildUpcoming, 0));
+      document.getElementById('cal-add').addEventListener('click', ()=> setTimeout(buildUpcoming, 500));
+    });
+  </script>
+</body>
+</html>

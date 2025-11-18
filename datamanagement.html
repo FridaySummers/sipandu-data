@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIPANDU DATA - Data Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="mobile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page force-light">
+  <nav class="top-nav">
+    <div class="nav-left">
+      <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <div class="nav-logo"><i class="fas fa-chart-line"></i><span>SIPANDU DATA</span></div>
+    </div>
+    <div class="nav-center">
+      <div class="search-box"><i class="fas fa-search"></i><input type="text" placeholder="Cari data, dinas, atau laporan..."></div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-item notifications" id="notifications">
+        <i class="fas fa-bell"></i>
+        <span class="badge" id="notification-count">2</span>
+        <div class="dropdown notification-dropdown" id="notification-dropdown">
+          <div class="dropdown-header"><h3>Notifikasi</h3><button class="mark-all-read">Tandai Semua Dibaca</button></div>
+          <div class="notification-list" id="notification-list"></div>
+        </div>
+      </div>
+      <div class="nav-item user-menu" id="user-menu">
+        <div class="user-avatar"><i class="fas fa-user"></i></div>
+        <span class="user-name" id="user-name">User</span>
+        <i class="fas fa-chevron-down"></i>
+        <div class="dropdown user-dropdown" id="user-dropdown">
+          <a href="dashboard.html" class="dropdown-item"><i class="fas fa-home"></i> Dashboard</a>
+          <a href="#" class="dropdown-item" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="user-info">
+        <div class="user-avatar"><i class="fas fa-user-tie"></i></div>
+        <div class="user-details"><h4 id="sidebar-user-name">User</h4><p id="sidebar-user-role">Role</p></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <ul class="nav-menu">
+        <li class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+        <li class="nav-item active"><a href="datamanagement.html" class="nav-link"><i class="fas fa-database"></i><span>Data Management</span></a></li>
+        <li class="nav-item"><a href="reports.html" class="nav-link"><i class="fas fa-chart-bar"></i><span>Laporan & Analisis</span></a></li>
+        <li class="nav-item"><a href="forum.html" class="nav-link"><i class="fas fa-comments"></i><span>Forum Diskusi</span></a></li>
+        <li class="nav-item"><a href="calendar.html" class="nav-link"><i class="fas fa-calendar"></i><span>Agenda & Kalender</span></a></li>
+        <li class="nav-item"><a href="dinas-status.html" class="nav-link"><i class="fas fa-building"></i><span>Status Dinas</span></a></li>
+        <li class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog"></i><span>Pengaturan</span></a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page active" id="data-management-page">
+      <div class="page-header"><h1>Data Management</h1><p>Kelola data perencanaan dari semua dinas - RKPD 2025</p></div>
+      <div class="kpi-grid">
+        <div class="kpi-card" id="kpi-total"><div class="kpi-icon"><i class="fas fa-database"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Total Data</div></div><div class="kpi-delta" id="kpi-total-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-complete"><div class="kpi-icon"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Complete</div></div><div class="kpi-delta" id="kpi-complete-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-progress"><div class="kpi-icon"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">In Progress</div></div><div class="kpi-delta" id="kpi-progress-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Pending Review</div></div><div class="kpi-delta" id="kpi-pending-delta">+0</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box"><i class="fas fa-search"></i><input id="dm-search" type="text" placeholder="Cari data..."></div>
+        </div>
+        <div class="toolbar-right">
+          <select id="dm-status-filter"><option value="">Semua Status</option><option value="Approved">Approved</option><option value="In Review">In Review</option><option value="Pending">Pending</option></select>
+          <button class="btn btn-outline" id="dm-filter"><i class="fas fa-filter"></i>Filter</button>
+          <button class="btn btn-outline" id="dm-export"><i class="fas fa-file-export"></i>Export</button>
+          <button class="btn btn-primary" id="dm-add-open"><i class="fas fa-plus"></i>Tambah Data</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="table table-compact" id="dm-table"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="dm-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>Tambah Data Baru</h3><button class="btn btn-outline btn-sm" id="dm-add-close">✕</button></div>
+      <div class="modal-body">
+        <div class="form-row"><label>Dinas</label><select id="dm-add-opd"></select></div>
+        <div class="form-row"><label>Kategori</label><select id="dm-add-category"><option value="Harga">Harga</option><option value="Produksi">Produksi</option><option value="SDM">SDM</option><option value="Konsumsi">Konsumsi</option></select></div>
+        <div class="form-row"><label>Nama Data</label><input id="dm-add-name" type="text" placeholder="Contoh: Data Inflasi dan Harga Bahan Pokok"></div>
+        <div class="form-row"><label>Periode</label><input id="dm-add-period" type="text" placeholder="Contoh: Jan 2025"></div>
+        <div class="form-row"><label>Penanggung Jawab</label><input id="dm-add-pic" type="text" placeholder="Nama penanggung jawab"></div>
+        <div class="card" id="dm-prev-box"><div class="card-header"><h3>Data Sebelumnya</h3></div><div class="card-body" id="dm-prev-content">Tidak ada data sebelumnya</div></div>
+        <div class="dropzone" id="dm-add-dropzone"><input type="file" id="dm-add-files" multiple><div class="dropzone-inner"><i class="fas fa-cloud-upload-alt"></i><h3>Tarik & Letakkan berkas ke sini</h3><p>Format: XLSX, CSV, JSON</p><button class="btn btn-primary" id="dm-add-select"><i class="fas fa-file"></i>Pilih Berkas</button></div></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" id="dm-add-cancel">Batal</button><button class="btn btn-primary" id="dm-add-save">Tambah Data</button></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="utils.js"></script>
+  <script src="datamanagement.js"></script>
+</body>
+</html>
