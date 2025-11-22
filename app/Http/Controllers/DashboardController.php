@@ -2,27 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Dinas;
 use App\Models\DataSubmission;
-use Illuminate\Http\Request;
+use App\Models\Dinas;
 
 class DashboardController extends Controller
 {
     public function __construct()
     {
-        ->middleware('auth');
+        $this->middleware('auth');
     }
 
     public function index()
     {
-         = Dinas::count();
-         = DataSubmission::count();
-         = DataSubmission::where('status', 'pending')->count();
-        
+        $dinasCount = class_exists(Dinas::class) ? (int) Dinas::count() : 0;
+        $submissionsCount = class_exists(DataSubmission::class) ? (int) DataSubmission::count() : 0;
+        $pendingSubmissions = class_exists(DataSubmission::class) ? (int) DataSubmission::where('status', 'pending')->count() : 0;
+
         return view('dashboard', [
-            'dinasCount' => ,
-            'submissionsCount' => ,
-            'pendingSubmissions' => 
+            'dinasCount' => $dinasCount,
+            'submissionsCount' => $submissionsCount,
+            'pendingSubmissions' => $pendingSubmissions,
         ]);
     }
 

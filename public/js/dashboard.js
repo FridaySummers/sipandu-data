@@ -16,12 +16,17 @@ class DashboardManager {
     this.bindEvents();
     this.loadDashboardData();
     this.renderActivityFeed();
+    const active = document.querySelector('.page.active');
+    if (active && active.id) {
+      const pageName = active.id.replace('-page','');
+      this.switchPage(pageName);
+    }
   }
 
   // Check if user is authenticated
   checkAuthentication() {
     if (!authHandler.isAuthenticated()) {
-      window.location.href = 'login.html';
+      window.location.href = '/fe/login';
       return;
     }
 
@@ -290,31 +295,114 @@ class DashboardManager {
   }
 
   initializeForum() {
-    const threads = [
-      { id:1, title:'Standarisasi Format Data', author:'Bappeda', replies:12, time:'2 jam lalu' },
-      { id:2, title:'Deadline Triwulan III', author:'Bapenda', replies:5, time:'5 jam lalu' },
-      { id:3, title:'Integrasi Portal Sektoral', author:'Perdagangan', replies:3, time:'1 hari lalu' }
-    ];
     const list = document.getElementById('thread-list');
-    const detail = document.getElementById('thread-detail');
+    const detailModal = document.getElementById('forum-detail-modal');
+    const detailBody = document.getElementById('fdm-body');
+    const detailClose = document.getElementById('fdm-close');
+    const replySend = document.getElementById('fdm-reply-send');
+    const replyCancel = document.getElementById('fdm-reply-cancel');
+    const search = document.getElementById('forum-search');
+    const category = document.getElementById('forum-category');
     const newBtn = document.getElementById('forum-new');
-    if (!list || !detail) return;
-    list.innerHTML = threads.map(t=> `
-      <div class="thread-item" data-id="${t.id}">
-        <div>
-          <div class="thread-title">${t.title}</div>
-          <div class="thread-meta">${t.author} • ${t.replies} balasan • ${t.time}</div>
+    const modal = document.getElementById('forum-modal');
+    const closeBtn = document.getElementById('forum-close');
+    const cancelBtn = document.getElementById('forum-cancel');
+    const saveBtn = document.getElementById('forum-save');
+    const titleInput = document.getElementById('forum-title');
+    const opdSelect = document.getElementById('forum-opd');
+    const catSelect = document.getElementById('forum-cat');
+    if (!list) return;
+
+    if (opdSelect && opdSelect.options.length === 0) {
+      dinasData.forEach(d=>{ const o=document.createElement('option'); o.value=d.name; o.textContent=d.name; opdSelect.appendChild(o); });
+    }
+
+    let threads = [
+      {id:1,title:'Diskusi Metodologi Pengumpulan Data Ekonomi Regional',subtitle:'Bagaimana pendekatan terbaik untuk mengumpulkan data inflasi di daerah?',author:'Ahmad Yani',opd:'Dinas Perdagangan',category:'Metodologi',date:'2025-01-10',lastReply:'2 jam lalu',likes:24,replies:12,views:158,messages:['Gunakan definisi variabel yang konsisten','Pertimbangkan seasonal adjustment']},
+      {id:2,title:'Best Practice Pelaporan Data Pendidikan',subtitle:'Mari berbagi pengalaman tentang cara efektif merekap dan validasi',author:'Budi Santoso',opd:'Dinas Pendidikan',category:'Best Practice',date:'2025-01-08',lastReply:'1 jam lalu',likes:31,replies:15,views:234,messages:['Template pelaporan terbaru dilampirkan','Contoh validasi kolom']},
+      {id:3,title:'Update Regulasi Pelaporan RKPD 2025',subtitle:'Informasi terbaru mengenai perubahan format pelaporan',author:'Admin Bappeda',opd:'Bappeda',category:'Pengumuman',date:'2025-01-15',lastReply:'1 jam lalu',likes:42,replies:6,views:342,messages:['Regulasi terbaru No. 5/2025','Sosialisasi pekan depan']},
+      {id:4,title:'Integrasi Data Kesehatan dengan Sistem Nasional',subtitle:'Perlu bantuan untuk integrasi data e-health nasional',author:'Sri Aminah',opd:'Dinas Kesehatan',category:'Teknis',date:'2025-01-12',lastReply:'5 jam lalu',likes:18,replies:8,views:89,messages:['Endpoint API tersedia','Mapping kolom selesai']},
+      {id:5,title:'Kendala Validasi Data Pertanian',subtitle:'Apa kendala masalah dengan validasi data produksi padi?',author:'Rina Wati',opd:'Dinas Pertanian',category:'Problem Solving',date:'2025-01-14',lastReply:'3 jam lalu',likes:15,replies:9,views:112,messages:['Outlier pada produksi padi','Butuh panduan pembersihan data']}
+    ];
+
+    let activeId = null;
+
+    const render = () => {
+      list.innerHTML = threads.map(t=>`
+        <div class="thread-item" data-id="${t.id}">
+          <div class="thread-item-inner">
+            <div class="thread-avatar">${t.author.charAt(0)}</div>
+            <div>
+              <div class="thread-title">${t.title}</div>
+              <div class="thread-subtitle">${t.subtitle}</div>
+              <div class="thread-tags"><span class="tag">${t.opd}</span><span class="tag">${t.category}</span><span class="tag">${DateUtils.formatDate(t.date,{day:'2-digit',month:'short',year:'numeric'})}</span></div>
+              <div class="thread-meta">Balasan terakhir: ${t.lastReply}</div>
+            </div>
+            <div class="thread-stats"><span><i class="fas fa-thumbs-up"></i>${t.likes}</span><span><i class="fas fa-comment"></i>${t.replies}</span><span><i class="fas fa-eye"></i>${t.views} views</span><button class="btn btn-outline btn-sm">Buka</button></div>
+          </div>
         </div>
-        <button class="btn btn-outline btn-sm">Buka</button>
-      </div>
-    `).join('');
-    list.querySelectorAll('.thread-item').forEach(item=>{
-      item.addEventListener('click', ()=>{
-        const t = threads.find(x=> x.id === parseInt(item.dataset.id));
-        if (t) detail.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>${t.title}</h3><span class="thread-meta">${t.author} • ${t.time}</span></div><div>Diskusi simulasi. Balasan: ${t.replies}</div>`;
+      `).join('');
+
+      list.querySelectorAll('.thread-item').forEach(item=>{
+        item.addEventListener('click', ()=>{
+          const t=threads.find(x=> x.id===parseInt(item.dataset.id));
+          if(!t) return;
+          activeId=t.id;
+          const msgs=t.messages.map(m=>`<div class='file-item'><div>${m}</div></div>`).join('');
+          if (detailBody) detailBody.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>${t.title}</h3><span class="thread-meta">${t.author} • ${t.opd} • ${t.category}</span></div>${msgs}<div class='form-row' style='margin-top:12px'><label>Balasan</label><textarea id='fdm-reply-input' rows='3' placeholder='Tulis balasan...'></textarea></div>`;
+          if (detailModal) detailModal.style.display = 'flex';
+        });
       });
-    });
-    if (newBtn) newBtn.onclick = () => Utils.showToast('Buat topik baru (simulasi)', 'info');
+    };
+
+    render();
+
+    const filterList = () => {
+      const query=(search?.value||'').toLowerCase();
+      const cat=category?.value||'';
+      document.querySelectorAll('#thread-list .thread-item').forEach(item=>{
+        const text=item.textContent.toLowerCase();
+        const hasQuery=query? text.includes(query) : true;
+        const meta=item.querySelector('.thread-tags')?.textContent||'';
+        const hasCat=cat? meta.includes(cat) : true;
+        item.style.display = (hasQuery && hasCat) ? 'block' : 'none';
+      });
+    };
+    if (search) search.addEventListener('input', Utils.debounce(filterList, 200));
+    if (category) category.addEventListener('change', filterList);
+
+    if (replySend) replySend.onclick = () => {
+      if (!activeId || !replyInput || !replyInput.value.trim()) return;
+      const t = threads.find(x=> x.id===activeId);
+      if (!t) return;
+      const inp = document.getElementById('fdm-reply-input');
+      if (!inp || !inp.value.trim()) return;
+      t.messages.push(inp.value.trim());
+      inp.value='';
+      render();
+      Utils.showToast('Balasan dikirim', 'success');
+    };
+    if (replyCancel) replyCancel.onclick = () => { if (detailModal) detailModal.style.display='none'; };
+    if (detailClose) detailClose.onclick = () => { if (detailModal) detailModal.style.display='none'; };
+
+    const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
+    if (newBtn) newBtn.onclick = () => toggleModal(true);
+    if (closeBtn) closeBtn.onclick = () => toggleModal(false);
+    if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
+    if (saveBtn) saveBtn.onclick = () => {
+      const title = titleInput?.value?.trim();
+      const opd = opdSelect?.value || '';
+      const cat = catSelect?.value || '';
+      const content = document.getElementById('forum-content')?.value?.trim() || '';
+      if (!title) { Utils.showToast('Judul wajib diisi', 'error'); return; }
+      const id = threads.length ? Math.max(...threads.map(t=>t.id))+1 : 1;
+      threads.unshift({ id, title, subtitle: content.slice(0,120), author: authHandler.getCurrentUser()?.name || 'User', opd, category: cat, date: new Date().toISOString().slice(0,10), lastReply:'baru saja', likes:0, replies:0, views:0, messages:[content] });
+      render();
+      toggleModal(false);
+      titleInput && (titleInput.value='');
+      document.getElementById('forum-content') && (document.getElementById('forum-content').value='');
+      Utils.showToast('Diskusi dibuat', 'success');
+    };
   }
 
   initializeCalendar() {
@@ -322,10 +410,42 @@ class DashboardManager {
     const grid = document.getElementById('calendar-month');
     const prev = document.getElementById('cal-prev');
     const next = document.getElementById('cal-next');
+    const todayBtn = document.getElementById('cal-today');
+    const addBtn = document.getElementById('cal-add');
     const eventList = document.getElementById('event-list');
+    const modal = document.getElementById('cal-modal');
+    const closeBtn = document.getElementById('cal-close');
+    const cancelBtn = document.getElementById('cal-cancel');
+    const saveBtn = document.getElementById('cal-save');
+    const evName = document.getElementById('cal-ev-name');
+    const evDate = document.getElementById('cal-ev-date');
+    const evType = document.getElementById('cal-ev-type');
+    const kpiEvents = document.getElementById('cal-kpi-events');
+    const kpiMeetings = document.getElementById('cal-kpi-meetings');
+    const kpiDeadlines = document.getElementById('cal-kpi-deadlines');
+    const kpiTraining = document.getElementById('cal-kpi-training');
     if (!title || !grid) return;
+
     let date = new Date();
-    const events = [ { day:5, title:'Rapat Koordinasi', color:'#2563eb' }, { day:12, title:'Deadline Upload', color:'#f59e0b' }, { day:22, title:'Review Data', color:'#10b981' } ];
+    let events = [
+      { day:5, title:'Rapat Koordinasi', color:'#2563eb', type:'Meeting' },
+      { day:12, title:'Deadline Upload', color:'#f59e0b', type:'Deadline' },
+      { day:15, title:'Workshop Validasi Data', color:'#7c3aed', type:'Training' },
+      { day:22, title:'Review Data', color:'#10b981', type:'Meeting' }
+    ];
+
+    const typeColor = (t)=> ({Meeting:'#2563eb', Deadline:'#f59e0b', Training:'#7c3aed'}[t]||'#64748b');
+
+    const renderKPIs = () => {
+      const month = date.getMonth();
+      const counts = {Meeting:0, Deadline:0, Training:0, total:0};
+      events.forEach(e=>{ counts.total++; if(counts[e.type]!=null) counts[e.type]++; });
+      if (kpiEvents) kpiEvents.textContent = counts.total;
+      if (kpiMeetings) kpiMeetings.textContent = counts.Meeting;
+      if (kpiDeadlines) kpiDeadlines.textContent = counts.Deadline;
+      if (kpiTraining) kpiTraining.textContent = counts.Training;
+    };
+
     const render = () => {
       const year = date.getFullYear();
       const month = date.getMonth();
@@ -338,34 +458,109 @@ class DashboardManager {
       for(let d=1; d<=days; d++){
         const isToday = new Date().getDate()===d && new Date().getMonth()===month && new Date().getFullYear()===year;
         const evs = events.filter(e=> e.day===d);
-        grid.innerHTML += `<div class="calendar-cell ${isToday?'today':''}"><div>${d}</div>${evs.map(e=>`<div class="event-badge" style="background:${e.color}">${e.title}</div>`).join('')}</div>`;
+        grid.innerHTML += `<div class="calendar-cell ${isToday?'today':''}"><div>${d}</div>${evs.map(e=>`<div class="event-badge" style="background:${typeColor(e.type)}">${e.title}</div>`).join('')}</div>`;
       }
-      eventList.innerHTML = events.map(e=> `<div class="file-item"><div>${e.title}</div><div class="thread-meta">Tanggal ${e.day}</div></div>`).join('');
+      const upcoming = events
+        .map(e=> ({...e, dateObj: new Date(date.getFullYear(), date.getMonth(), e.day) }))
+        .sort((a,b)=> a.dateObj - b.dateObj);
+      eventList.innerHTML = upcoming.map(e=> `<div class="file-item"><div>${e.title}</div><div class="thread-meta">${e.type} • ${e.day} ${names[month]} ${date.getFullYear()}</div></div>`).join('');
+      renderKPIs();
     };
+
     render();
+
     if (prev) prev.onclick = () => { date.setMonth(date.getMonth()-1); render(); };
     if (next) next.onclick = () => { date.setMonth(date.getMonth()+1); render(); };
+    if (todayBtn) todayBtn.onclick = () => { date = new Date(); render(); };
+
+    const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
+    if (addBtn) addBtn.onclick = () => toggleModal(true);
+    if (closeBtn) closeBtn.onclick = () => toggleModal(false);
+    if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
+    if (saveBtn) saveBtn.onclick = () => {
+      const name = evName?.value?.trim();
+      const dateStr = evDate?.value;
+      const type = evType?.value || 'Meeting';
+      if (!name || !dateStr) { Utils.showToast('Lengkapi nama dan tanggal', 'error'); return; }
+      const dt = new Date(dateStr);
+      if (isNaN(dt.getTime())) { Utils.showToast('Tanggal tidak valid', 'error'); return; }
+      if (dt.getMonth() !== date.getMonth() || dt.getFullYear() !== date.getFullYear()) {
+        date = new Date(dt.getFullYear(), dt.getMonth(), 1);
+      }
+      events.push({ day: dt.getDate(), title: name, color: typeColor(type), type });
+      render();
+      toggleModal(false);
+      evName && (evName.value='');
+      evDate && (evDate.value='');
+      Utils.showToast('Event ditambahkan', 'success');
+    };
   }
 
   initializeDinasStatus() {
     const table = document.getElementById('ds-table');
     const search = document.getElementById('ds-search');
+    const statusSel = document.getElementById('ds-status');
+    const exportBtn = document.getElementById('ds-export');
+    const kTotal = document.querySelector('#ds-kpi-total .kpi-value');
+    const kComp = document.querySelector('#ds-kpi-complete .kpi-value');
+    const kProg = document.querySelector('#ds-kpi-progress .kpi-value');
+    const kPend = document.querySelector('#ds-kpi-pending .kpi-value');
     if (!table) return;
-    const render = (q='') => {
-      const rows = dinasData.filter(d=> d.name.toLowerCase().includes(q.toLowerCase())).map(d=> `
+    let sortKey = 'name'; let sortDir = 'asc';
+    const getSorted = (list) => {
+      return list.slice().sort((a,b)=>{
+        const va = a[sortKey]; const vb = b[sortKey];
+        if (typeof va === 'string') return sortDir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return sortDir==='asc' ? va - vb : vb - va;
+      });
+    };
+    const renderKPI = (list) => {
+      const total = list.length;
+      const comp = list.filter(d=> d.status==='Complete').length;
+      const prog = list.filter(d=> d.status==='Progress').length;
+      const pend = list.filter(d=> d.status==='Pending').length;
+      if (kTotal) kTotal.textContent = total;
+      if (kComp) kComp.textContent = comp;
+      if (kProg) kProg.textContent = prog;
+      if (kPend) kPend.textContent = pend;
+    };
+    const render = (q='', s='') => {
+      const list = dinasData
+        .filter(d=> d.name.toLowerCase().includes(q.toLowerCase()))
+        .filter(d=> s ? d.status===s : true);
+      renderKPI(list);
+      const sorted = getSorted(list);
+      const rows = sorted.map(d=> `
         <tr>
-          <td>${d.name}</td>
+          <td><i class="${d.icon}" style="color:${d.color}; margin-right:8px"></i>${d.name}</td>
           <td>${d.fullName}</td>
-          <td>
-            <div class="progress-line"><div class="progress-line-fill" style="width:${d.progress}%; background:${d.color}"></div></div>
-          </td>
-          <td>${d.status}</td>
+          <td><div class="progress-line"><div class="progress-line-fill" style="width:${d.progress}%; background:${d.color}"></div></div></td>
+          <td><span class="status-badge ${d.status==='Complete'?'approved': d.status==='Progress'?'inreview':'pending'}">${d.status}</span></td>
         </tr>
       `).join('');
-      table.innerHTML = `<thead><tr><th>OPD</th><th>Nama Lengkap</th><th>Progress</th><th>Status</th></tr></thead><tbody>${rows}</tbody>`;
+      table.innerHTML = `<thead><tr>
+        <th data-sort="name">OPD</th>
+        <th data-sort="fullName">Nama Lengkap</th>
+        <th data-sort="progress">Progress</th>
+        <th data-sort="status">Status</th>
+      </tr></thead><tbody>${rows}</tbody>`;
+      table.querySelectorAll('th[data-sort]').forEach(th=>{
+        th.style.cursor='pointer';
+        th.onclick = () => { sortKey = th.dataset.sort; sortDir = sortDir==='asc' ? 'desc' : 'asc'; render(search?.value||'', statusSel?.value||''); };
+      });
     };
-    render();
-    if (search) search.oninput = (e)=> render(e.target.value);
+    render('', '');
+    if (search) search.oninput = (e)=> render(e.target.value, statusSel?.value||'');
+    if (statusSel) statusSel.onchange = (e)=> render(search?.value||'', e.target.value);
+    if (exportBtn) exportBtn.onclick = () => {
+      const list = dinasData
+        .filter(d=> d.name.toLowerCase().includes((search?.value||'').toLowerCase()))
+        .filter(d=> statusSel?.value ? d.status===statusSel.value : true);
+      const rows = [['OPD','Nama Lengkap','Progress','Status']].concat(list.map(d=> [d.name, d.fullName, d.progress, d.status]));
+      const csv = rows.map(r=> r.map(x=>`"${x}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'status-dinas.csv'; a.click(); URL.revokeObjectURL(url);
+    };
   }
 
   initializeSettings() {
@@ -388,7 +583,7 @@ class DashboardManager {
   bindEvents() {
     // Logout button
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
+    if (logoutBtn && !logoutBtn.dataset.enhanced) {
       logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         this.handleLogout();
@@ -418,9 +613,9 @@ class DashboardManager {
 
   // Handle logout
   handleLogout() {
-    if (confirm('Apakah Anda yakin ingin keluar?')) {
-      authHandler.logout();
-    }
+    const btn = document.getElementById('logout-btn');
+    if (btn && btn.dataset.enhanced) return;
+    if (confirm('Apakah Anda yakin ingin keluar?')) { authHandler.logout(); }
   }
 
   // Perform search
@@ -621,13 +816,29 @@ let dashboardManager;
 let autoRefresh;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize if we're on the dashboard page
-  if (window.location.pathname.includes('dashboard.html')) {
+  const path = window.location.pathname;
+  const initOnFe = path.startsWith('/fe/');
+  if (path.includes('dashboard.html') || initOnFe) {
     dashboardManager = new DashboardManager();
+    const routeMap = {
+      '/fe/dashboard': 'dashboard',
+      '/fe/datamanagement': 'data-management',
+      '/fe/reports': 'reports',
+      '/fe/forum': 'forum',
+      '/fe/calendar': 'calendar',
+      '/fe/dinas-status': 'dinas-status',
+      '/fe/settings': 'settings',
+    };
+    const target = routeMap[path];
+    if (target) {
+      dashboardManager.switchPage(target);
+    }
 
-    // Start auto-refresh
-    autoRefresh = new AutoRefresh(dashboardManager);
-    autoRefresh.start();
+    // Start auto-refresh only on dashboard
+    if (!initOnFe || path === '/fe/dashboard' || path.includes('dashboard.html')) {
+      autoRefresh = new AutoRefresh(dashboardManager);
+      autoRefresh.start();
+    }
 
     // Handle window resize
     window.addEventListener('resize', Utils.debounce(() => {
@@ -636,6 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle visibility change (pause auto-refresh when tab is not active)
     document.addEventListener('visibilitychange', () => {
+      if (!autoRefresh) return;
       if (document.hidden) {
         autoRefresh.stop();
       } else {

@@ -9,39 +9,44 @@ class DataManagementController extends Controller
 {
     public function __construct()
     {
-        ->middleware('auth');
+        $this->middleware('auth');
     }
 
     public function index()
     {
-         = DataSubmission::paginate(15);
-        return view('datamanagement', ['submissions' => ]);
+        $submissions = class_exists(DataSubmission::class) ? DataSubmission::paginate(15) : null;
+
+        return view('datamanagement', ['submissions' => $submissions]);
     }
 
-    public function store(Request )
+    public function store(Request $request)
     {
-         = ->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'dinas_id' => 'required|exists:dinas,id',
-            'data' => 'required|json'
+            'dinas_id' => 'required',
+            'data' => 'required',
         ]);
 
-        DataSubmission::create();
+        if (class_exists(DataSubmission::class)) {
+            DataSubmission::create($validated);
+        }
+
         return redirect()->route('datamanagement')->with('success', 'Data submitted successfully');
     }
 
-    public function update(Request , DataSubmission )
+    public function update(Request $request, DataSubmission $submission)
     {
-        ->authorize('update', );
+        $this->authorize('update', $submission);
 
-         = ->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'data' => 'required|json'
+            'data' => 'required',
         ]);
 
-        ->update();
+        $submission->update($validated);
+
         return redirect()->route('datamanagement')->with('success', 'Data updated successfully');
     }
 }

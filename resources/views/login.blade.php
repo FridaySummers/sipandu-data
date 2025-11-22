@@ -20,60 +20,42 @@
         </div>
 
         <div class="login-content">
-            @if ($errors->any())
-                <div class="alert alert-error">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}" class="login-form">
-                @csrf
-                
+            <form class="login-form" id="login-form">
                 <div class="form-group">
-                    <label for="email">Email</label>
+                    <label for="username">Username</label>
                     <div class="input-group">
                         <i class="fas fa-user"></i>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            placeholder="Masukkan email" 
-                            value="{{ old('email') }}"
-                            required
-                        >
+                        <input type="text" id="username" name="username" placeholder="Masukkan username" required>
                     </div>
-                    @error('email')
-                        <span class="error-text">{{ $message }}</span>
-                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="input-group">
                         <i class="fas fa-lock"></i>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            placeholder="Masukkan password" 
-                            required
-                        >
+                        <input type="password" id="password" name="password" placeholder="Masukkan password" required>
                         <button type="button" class="toggle-password" id="toggle-password">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    @error('password')
-                        <span class="error-text">{{ $message }}</span>
-                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <div class="input-group">
+                        <i class="fas fa-user-tag"></i>
+                        <select id="role" name="role" required>
+                            <option value="">Pilih Role</option>
+                            <option value="admin">Super Admin (Bappeda)</option>
+                            <option value="dinas">Admin Dinas</option>
+                            <option value="user">User</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-options">
                     <label class="checkbox-container">
-                        <input type="checkbox" id="remember" name="remember">
+                        <input type="checkbox" id="remember">
                         <span class="checkmark"></span>
                         Ingat saya
                     </label>
@@ -85,8 +67,46 @@
                     Masuk ke Dashboard
                 </button>
             </form>
+
+            <div class="login-divider">
+                <span>Demo Credentials</span>
+            </div>
+
+            <div class="demo-accounts">
+                <div class="demo-account" data-username="admin.bappeda" data-password="sipandu2025" data-role="admin">
+                    <div class="demo-info">
+                        <strong>Super Admin</strong>
+                        <span>admin.bappeda / sipandu2025</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm">Gunakan</button>
+                </div>
+                <div class="demo-account" data-username="admin.perdagangan" data-password="dinas123" data-role="dinas">
+                    <div class="demo-info">
+                        <strong>Admin Dinas</strong>
+                        <span>admin.perdagangan / dinas123</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm">Gunakan</button>
+                </div>
+                <div class="demo-account" data-username="user.demo" data-password="user123" data-role="user">
+                    <div class="demo-info">
+                        <strong>User Demo</strong>
+                        <span>user.demo / user123</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm">Gunakan</button>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div class="login-footer">
+        <p>&copy; 2025 Bappeda Kabupaten Kolaka Utara</p>
+        <p>Dikembangkan oleh H. Agus Salim, S.Pi</p>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Memverifikasi kredensial...</p>
 </div>
 @endsection
 
@@ -95,7 +115,6 @@
     document.getElementById('toggle-password')?.addEventListener('click', function() {
         const passwordInput = document.getElementById('password');
         const icon = this.querySelector('i');
-        
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
             icon.classList.remove('fa-eye');

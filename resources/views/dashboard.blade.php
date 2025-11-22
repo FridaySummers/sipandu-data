@@ -7,7 +7,7 @@
 <div class="dashboard-container">
     <div class="dashboard-header">
         <h1>Dashboard SIPANDU DATA</h1>
-        <p>Selamat datang, {{ auth()->user()->name }}</p>
+        <p>Selamat datang, {{ auth()->user()->name ?? 'User' }}</p>
     </div>
 
     <div class="stats-grid">

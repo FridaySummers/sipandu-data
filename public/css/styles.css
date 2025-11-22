@@ -185,54 +185,27 @@ input, select, textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-6);
+  padding: 8px 12px;
   font-weight: 500;
   font-size: var(--font-size-sm);
-  border-radius: var(--radius);
-  transition: all var(--transition-fast);
+  border-radius: var(--radius-lg);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   text-decoration: none;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
-.btn-primary {
-  background: var(--primary-blue);
-  color: white;
-}
+.btn-primary { background: var(--primary-blue); color: #fff; border-color: var(--primary-blue); }
+.btn-primary:hover { background: var(--primary-blue-dark); }
 
-.btn-primary:hover {
-  background: var(--primary-blue-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
+.btn-secondary { background: #f8fafc; color: var(--gray-800); border-color: var(--gray-300); }
+.btn-secondary:hover { background: #eef2ff; border-color: #cfe0ff; }
 
-.btn-secondary {
-  background: white;
-  color: var(--primary-blue);
-  border: 2px solid var(--primary-blue);
-}
+.btn-outline { background: #fff; color: var(--gray-800); border-color: var(--gray-300); }
+.btn-outline:hover { background: #f8fafc; border-color: var(--gray-400); }
 
-.btn-secondary:hover {
-  background: var(--primary-blue);
-  color: white;
-}
-
-.btn-outline {
-  background: transparent;
-  color: var(--gray-600);
-  border: 1px solid var(--gray-300);
-}
-
-.btn-outline:hover {
-  background: var(--gray-100);
-  border-color: var(--gray-400);
-}
-
-.btn-sm {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-xs);
-}
+.btn-sm { padding: 6px 10px; font-size: var(--font-size-xs); }
 
 .btn-full {
   width: 100%;

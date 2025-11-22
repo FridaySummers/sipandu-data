@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  if (!authHandler.isAuthenticated()) { window.location.href = 'login.html'; return; }
+  if (!authHandler.isAuthenticated()) { window.location.href = '/fe/login'; return; }
   const current = authHandler.getCurrentUser();
   const userName = document.getElementById('user-name');
   const sidebarUserName = document.getElementById('sidebar-user-name');
@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('dm-search');
   const statusFilter = document.getElementById('dm-status-filter');
   const table = document.getElementById('dm-table');
+  const pageText = document.getElementById('dm-page-text');
+  const prevPage = document.getElementById('dm-page-prev');
+  const nextPage = document.getElementById('dm-page-next');
+  const filterBtn = document.getElementById('dm-filter');
+  const filterPanel = document.getElementById('dm-filter-panel');
+  const filterOPD = document.getElementById('dm-filter-opd');
+  const filterCategory = document.getElementById('dm-filter-category');
   const backBtn = document.getElementById('dm-back');
   // Modal elements
   const modal = document.getElementById('dm-modal');
@@ -34,22 +41,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const addDropzone = document.getElementById('dm-add-dropzone');
   const addFilesInput = document.getElementById('dm-add-files');
   const addSelectBtn = document.getElementById('dm-add-select');
+  const schemaBox = document.getElementById('dm-add-schema');
+  const sumOPD = document.getElementById('dm-sum-opd');
+  const sumCat = document.getElementById('dm-sum-category');
+  const sumName = document.getElementById('dm-sum-name');
+  const sumPeriod = document.getElementById('dm-sum-period');
+  const sumPic = document.getElementById('dm-sum-pic');
+  const sumFiles = document.getElementById('dm-sum-files');
 
   const fillOPD = (select) => {
     if (!select) return; if (select.options.length > 1) return;
     dinasData.forEach(d => { const opt = document.createElement('option'); opt.value = d.name; opt.textContent = d.name; select.appendChild(opt); });
+    if (dinasData.length) select.value = dinasData[0].name;
   };
+  let page = 1; const pageSize = 10;
   const renderTable = (q = '', s = '') => {
     const list = records
       .filter(r => r.name.toLowerCase().includes(q.toLowerCase()))
-      .filter(r => (s ? r.status === s : true));
-    const rows = list.map(r => `
+      .filter(r => (s ? r.status === s : true))
+      .filter(r => (filterOPD && filterOPD.value ? r.opd === filterOPD.value : true))
+      .filter(r => (filterCategory && filterCategory.value ? r.category === filterCategory.value : true));
+    const total = list.length;
+    const start = total ? (page - 1) * pageSize + 1 : 0;
+    const end = Math.min(page * pageSize, total);
+    const slice = list.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
+    const rows = slice.map(r => `
       <tr>
         <td>${r.opd}</td>
         <td>${r.category}</td>
         <td>${r.name}</td>
         <td>${r.period}</td>
-        <td>${r.status}</td>
+        <td><span class="status-badge ${r.status==='Approved' ? 'approved' : (r.status==='In Review' ? 'inreview' : 'pending')}">${r.status}</span></td>
         <td>
           <div class="progress-line"><div class="progress-line-fill" style="width:${r.progress}%; background:#2563eb"></div></div>
         </td>
@@ -59,38 +81,104 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>
     `).join('');
     table.innerHTML = `<thead><tr><th>Dinas</th><th>Kategori</th><th>Nama Data</th><th>Periode</th><th>Status</th><th class="col-progress">Progress</th><th>Tanggal Update</th><th>Penanggung Jawab</th><th class="col-actions">Aksi</th></tr></thead><tbody>${rows}</tbody>`;
-    const total = records.length;
     const complete = records.filter(r=> r.status==='Approved').length;
     const progress = records.filter(r=> r.status==='In Review').length;
     const pending = records.filter(r=> r.status==='Pending').length;
     const setKpi = (id, value) => { const el = document.querySelector(`#${id} .kpi-value`); if (el) el.textContent = value; };
-    setKpi('kpi-total', total); setKpi('kpi-complete', complete); setKpi('kpi-progress', progress); setKpi('kpi-pending', pending);
+    setKpi('kpi-total', records.length); setKpi('kpi-complete', complete); setKpi('kpi-progress', progress); setKpi('kpi-pending', pending);
+    const setDelta = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = `+${value}`; };
+    setDelta('kpi-total-delta', 0); setDelta('kpi-complete-delta', 0); setDelta('kpi-progress-delta', 0); setDelta('kpi-pending-delta', 0);
+    if (pageText) pageText.textContent = `Menampilkan ${start} - ${end} dari ${total} data`;
+    if (prevPage) prevPage.disabled = page <= 1;
+    if (nextPage) nextPage.disabled = page * pageSize >= total;
   };
   renderTable('', '');
   const debouncedRender = Utils.debounce((q, s) => renderTable(q, s), 200);
-  if (searchInput) searchInput.oninput = (e) => debouncedRender(e.target.value, statusFilter?.value || '');
-  if (statusFilter) statusFilter.onchange = (e) => renderTable(searchInput?.value || '', e.target.value);
+  if (searchInput) searchInput.oninput = (e) => { page = 1; debouncedRender(e.target.value, statusFilter?.value || ''); };
+  if (statusFilter) statusFilter.onchange = (e) => { page = 1; renderTable(searchInput?.value || '', e.target.value); };
+  if (filterBtn && filterPanel) filterBtn.onclick = () => { filterPanel.style.display = filterPanel.style.display === 'none' ? 'block' : 'none'; };
+  if (filterOPD && filterOPD.options.length <= 1) { dinasData.forEach(d => { const opt=document.createElement('option'); opt.value=d.name; opt.textContent=d.name; filterOPD.appendChild(opt); }); }
+  if (filterOPD) filterOPD.onchange = () => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
+  if (filterCategory) filterCategory.onchange = () => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
+  if (prevPage) prevPage.onclick = () => { if (page > 1) { page--; renderTable(searchInput?.value || '', statusFilter?.value || ''); } };
+  if (nextPage) nextPage.onclick = () => { page++; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
 
   if (backBtn) backBtn.onclick = () => { if (window.history.length > 1) { window.history.back(); } else { window.location.href = 'dashboard.html'; } };
 
   fillOPD(addOPD);
   addPeriod.value = new Date().toLocaleString('id-ID', { month: 'short', year: 'numeric' });
 
+  const schemas = {
+    'Perdagangan': { tables:[
+      { title:'Kontribusi Sektor Perdagangan terhadap PDRB (HB) 2025-2029', years:[2025,2026,2027,2028,2029], rows:['PDRB Sektor Perdagangan HB','Total PDRB Harga berlaku','Kontribusi Sektor Perdagangan terhadap PDRB (HB)'] },
+      { title:'Perkembangan Ekspor/Impor ADHB 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Nilai Ekspor ADHB','Nilai Impor ADHB','Nilai Ekspor Bersih ADHB'] }
+    ] },
+    'Koperasi': { title:'Perkembangan Perkoperasian 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Jumlah Koperasi Sehat','Jumlah Layanan Izin Usaha Simpan Pinjam','Jumlah Kesehatan KSP/USP yang dinilai','Jumlah Pendidikan dan Pelatihan Perkoperasian','Rasio Pertumbuhan Wirausaha Baru berskala mikro'] },
+    'Tanaman Pangan': { title:'Tanaman Pangan 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Luas Panen (ha)','Produksi (ton)','Produktivitas (ku/ha)'], crops:['Padi','Jagung','Ubi Kayu','Ubi Jalar','Kacang Kedelai','Kacang Tanah','Kacang Hijau'] },
+    'Perkebunan': { title:'Perkebunan 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Luas Tanam','Produksi','Produktivitas'] },
+    'Ketapang': { title:'Ketapang 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Luas Panen','Produksi','Produktivitas'] },
+    'Pariwisata': { title:'Pariwisata 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Kunjungan Wisatawan','Pendapatan Sektor Pariwisata','Jumlah Destinasi'] },
+    'DLH': { title:'Lingkungan Hidup 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Kualitas Udara','Kualitas Air','Pengelolaan Sampah'] },
+    'Perikanan': { title:'Perikanan 2019-2023', years:[2019,2020,2021,2022,2023], rows:['Produksi Tangkap','Produksi Budidaya','Nilai Ekspor'] }
+  };
+
+  const renderSchema = (opd) => {
+    if (!schemaBox) return;
+    const s = schemas[opd];
+    if (!s) { schemaBox.innerHTML = '<div class="thread-meta">Tidak ada form khusus untuk OPD ini. Gunakan kolom umum di kiri.</div>'; return; }
+    const renderTable = (title, years, rows, key='tbl') => {
+      const thead = `<thead><tr><th>Uraian</th>${years.map(y=>`<th>${y}</th>`).join('')}</tr></thead>`;
+      const tbody = rows.map((r,ri)=> `<tr><td>${r}</td>${years.map((y,yi)=>`<td><input type="text" data-schema-key="${key}|${ri}|${y}" class="form-control"/></td>`).join('')}</tr>`).join('');
+      return `<div class="card" style="margin-bottom:12px"><div class="card-header"><h3>${title}</h3></div><div class="card-body"><div class="table-wrap"><table class="table table-compact">${thead}<tbody>${tbody}</tbody></table></div></div></div>`;
+    };
+    if (s.tables) {
+      schemaBox.innerHTML = s.tables.map((t,i)=> renderTable(t.title, t.years, t.rows, `t${i}`)).join('');
+      return;
+    }
+    if (s.crops) {
+      const years = s.years; const base = renderTable(s.title, years, s.rows, 'base');
+      const crops = s.crops.map((c,ci)=> renderTable(`${c}`, years, s.rows, `crop${ci}`)).join('');
+      schemaBox.innerHTML = base + crops;
+      return;
+    }
+    schemaBox.innerHTML = renderTable(s.title, s.years, s.rows, 'main');
+  };
+
+  const collectSchemaValues = () => {
+    const out = {}; if (!schemaBox) return out;
+    schemaBox.querySelectorAll('[data-schema-key]').forEach(inp => { out[inp.dataset.schemaKey] = inp.value; });
+    return out;
+  };
+
+  const renderSummary = () => {
+    if (sumOPD) sumOPD.textContent = addOPD.value || '-';
+    if (sumCat) sumCat.textContent = addCategory.value || '-';
+    if (sumName) sumName.textContent = addName.value || '-';
+    if (sumPeriod) sumPeriod.textContent = addPeriod.value || '-';
+    if (sumPic) sumPic.textContent = addPic.value || current.name || '-';
+    if (sumFiles) sumFiles.textContent = `${tempFiles.length} file`;
+  };
+
   const refreshPrev = () => {
+    if (!prevBox) return;
     const prev = records.filter(r => r.opd === addOPD.value && r.category === addCategory.value).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
     prevBox.innerHTML = prev ? `
       <div class="file-item"><div><div class="thread-title">${prev.name}</div><div class="thread-meta">${prev.opd} • ${prev.category} • ${prev.period}</div></div><div class="file-meta"><span>${prev.status}</span><span>${prev.pic}</span><span>${prev.progress}%</span></div></div>
-    ` : 'Tidak ada data sebelumnya';
+    ` : '';
   };
-  addOPD.onchange = refreshPrev;
-  addCategory.onchange = refreshPrev;
+  addOPD.onchange = () => { refreshPrev(); renderSummary(); renderSchema(addOPD.value); };
+  addCategory.onchange = () => { refreshPrev(); renderSummary(); };
+  addName.oninput = renderSummary;
+  addPeriod.oninput = renderSummary;
+  addPic.oninput = renderSummary;
 
   const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
-  if (openBtn) openBtn.onclick = () => { toggleModal(true); refreshPrev(); };
+  if (openBtn) openBtn.onclick = () => { toggleModal(true); refreshPrev(); renderSummary(); renderSchema(addOPD.value); };
   if (closeBtn) closeBtn.onclick = () => toggleModal(false);
   if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
+  if (modal) modal.addEventListener('click', (e)=> { if (e.target === modal) toggleModal(false); });
   let tempFiles = [];
-  const handleFiles = (files) => { tempFiles = Array.from(files).map(f=>({ name:f.name, size:f.size })); Utils.showToast(`${tempFiles.length} berkas dipilih`, 'success'); };
+  const handleFiles = (files) => { tempFiles = Array.from(files).map(f=>({ name:f.name, size:f.size })); Utils.showToast(`${tempFiles.length} berkas dipilih`, 'success'); renderSummary(); };
   if (addSelectBtn) addSelectBtn.onclick = () => addFilesInput.click();
   if (addFilesInput) addFilesInput.onchange = (e)=> handleFiles(e.target.files);
   if (addDropzone) {
@@ -111,7 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
       pic: addPic.value || current.name,
       progress: 0,
       createdAt: new Date().toISOString(),
-      files: tempFiles
+      files: tempFiles,
+      schema: collectSchemaValues()
     };
     records.unshift(rec);
     saveRecords(records);
@@ -119,6 +208,167 @@ document.addEventListener('DOMContentLoaded', () => {
     Utils.showToast('Data ditambahkan', 'success');
     toggleModal(false);
   };
+
+  const dpmKey = 'sipandu_dm_dpmptsp';
+  const dpmTable = document.getElementById('dpm-table');
+  const dpmAdd = document.getElementById('dpm-add');
+  const dpmModal = document.getElementById('dpm-modal');
+  const dpmClose = document.getElementById('dpm-close');
+  const dpmCancel = document.getElementById('dpm-cancel');
+  const dpmSave = document.getElementById('dpm-save');
+  const dpmInd = document.getElementById('dpm-indikator');
+  const dpmTipe = document.getElementById('dpm-tipe');
+  const dpmY25 = document.getElementById('dpm-y2025');
+  const dpmY26 = document.getElementById('dpm-y2026');
+  const dpmY27 = document.getElementById('dpm-y2027');
+  const dpmY28 = document.getElementById('dpm-y2028');
+  const dpmY29 = document.getElementById('dpm-y2029');
+  let dpmEditId = null;
+  const loadDpm = () => { try { return JSON.parse(localStorage.getItem(dpmKey)) || []; } catch { return []; } };
+  const saveDpm = (data) => localStorage.setItem(dpmKey, JSON.stringify(data));
+  let dpmRows = loadDpm();
+  const renderDpm = () => {
+    const rows = dpmRows.map(r=>`
+      <tr>
+        <td>${r.indikator}</td>
+        <td><span class="tag">${r.tipe}</span></td>
+        <td>${r.y2025||'-'}</td>
+        <td>${r.y2026||'-'}</td>
+        <td>${r.y2027||'-'}</td>
+        <td>${r.y2028||'-'}</td>
+        <td>${r.y2029||'-'}</td>
+        <td><button class="btn btn-outline btn-sm" data-act="edit" data-id="${r.id}"><i class="fas fa-pen"></i></button> <button class="btn btn-outline btn-sm" data-act="del" data-id="${r.id}" style="color:#ef4444"><i class="fas fa-trash"></i></button></td>
+      </tr>
+    `).join('');
+    if (dpmTable) dpmTable.innerHTML = `<thead><tr><th>Indikator</th><th>Tipe</th><th>2025</th><th>2026</th><th>2027</th><th>2028</th><th>2029</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+    if (dpmTable) dpmTable.querySelectorAll('button[data-act]').forEach(b=>{
+      b.onclick = () => {
+        const id=b.dataset.id; const act=b.dataset.act; const item=dpmRows.find(x=> x.id==id);
+        if (!item) return;
+        if (act==='del') { dpmRows = dpmRows.filter(x=> x.id!=id); saveDpm(dpmRows); renderDpm(); return; }
+        dpmEditId = id;
+        dpmInd.value = item.indikator; dpmTipe.value = item.tipe;
+        dpmY25.value = item.y2025||''; dpmY26.value = item.y2026||''; dpmY27.value = item.y2027||''; dpmY28.value = item.y2028||''; dpmY29.value = item.y2029||'';
+        if (dpmModal) dpmModal.style.display='flex';
+      };
+    });
+  };
+  renderDpm();
+  const toggleDpmModal = (show) => { if (dpmModal) dpmModal.style.display = show ? 'flex' : 'none'; };
+  if (dpmAdd) dpmAdd.onclick = () => { dpmEditId=null; dpmInd.value=''; dpmTipe.value=''; dpmY25.value=''; dpmY26.value=''; dpmY27.value=''; dpmY28.value=''; dpmY29.value=''; toggleDpmModal(true); };
+  if (dpmClose) dpmClose.onclick = () => toggleDpmModal(false);
+  if (dpmCancel) dpmCancel.onclick = () => toggleDpmModal(false);
+  if (dpmModal) dpmModal.addEventListener('click',(e)=>{ if(e.target===dpmModal) toggleDpmModal(false); });
+  if (dpmSave) dpmSave.onclick = () => {
+    const ind = dpmInd.value.trim(); if (!ind) { Utils.showToast('Isi indikator', 'error'); return; }
+    if (!dpmTipe.value) { Utils.showToast('Pilih tipe data (PMDN/PMA)', 'error'); return; }
+    const rec = {
+      id: dpmEditId || Date.now(),
+      indikator: ind,
+      tipe: dpmTipe.value,
+      y2025: dpmY25.value.trim(),
+      y2026: dpmY26.value.trim(),
+      y2027: dpmY27.value.trim(),
+      y2028: dpmY28.value.trim(),
+      y2029: dpmY29.value.trim()
+    };
+    if (dpmEditId) { dpmRows = dpmRows.map(x=> x.id===dpmEditId ? rec : x); } else { dpmRows.unshift(rec); }
+    saveDpm(dpmRows); renderDpm(); toggleDpmModal(false); Utils.showToast('Data DPMPTSP disimpan', 'success');
+  };
+
+  const pdPdrbKey = 'sipandu_dm_perdagangan_pdrb';
+  const pdEksKey = 'sipandu_dm_perdagangan_eks';
+  const pdPdrbTable = document.getElementById('pd-pdrb-table');
+  const pdEksTable = document.getElementById('pd-eks-table');
+  const pdTabPdrb = document.getElementById('pd-tab-pdrb');
+  const pdTabEks = document.getElementById('pd-tab-eks');
+  const pdAddPdrb = document.getElementById('pd-add-pdrb');
+  const pdAddEks = document.getElementById('pd-add-eks');
+  const pdPdrbInline = document.getElementById('pd-pdrb-inline');
+  const pdEksInline = document.getElementById('pd-eks-inline');
+  const pdPdrbUra = document.getElementById('pd-pdrb-uraian');
+  const pdExUra = document.getElementById('pd-eks-uraian');
+  const pdPdrbCancel = document.getElementById('pd-pdrb-cancel');
+  const pdPdrbSave = document.getElementById('pd-pdrb-save');
+  const pdEksCancel = document.getElementById('pd-eks-cancel');
+  const pdEksSave = document.getElementById('pd-eks-save');
+  const getVal = (id) => document.getElementById(id)?.value?.trim() || '';
+  const loadJson = (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } };
+  const saveJson = (k,d) => localStorage.setItem(k, JSON.stringify(d));
+  let pdPdrbRows = loadJson(pdPdrbKey);
+  let pdEksRows = loadJson(pdEksKey);
+  const renderPdPdrb = () => {
+    const rows = pdPdrbRows.map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.uraian}</td>
+        <td>${r.y2025||'-'}</td><td>${r.y2026||'-'}</td><td>${r.y2027||'-'}</td><td>${r.y2028||'-'}</td><td>${r.y2029||'-'}</td>
+      </tr>
+    `).join('');
+    if (pdPdrbTable) pdPdrbTable.innerHTML = `<thead><tr><th>No.</th><th>Uraian</th><th>2025</th><th>2026</th><th>2027</th><th>2028</th><th>2029</th></tr></thead><tbody>${rows}</tbody>`;
+  };
+  const renderPdEks = () => {
+    const rows = pdEksRows.map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.uraian}</td>
+        <td>${r.y2019||'-'}</td><td>${r.y2020||'-'}</td><td>${r.y2021||'-'}</td><td>${r.y2022||'-'}</td><td>${r.y2023||'-'}</td>
+      </tr>
+    `).join('');
+    if (pdEksTable) pdEksTable.innerHTML = `<thead><tr><th>No.</th><th>Uraian</th><th>2019</th><th>2020</th><th>2021</th><th>2022</th><th>2023</th></tr></thead><tbody>${rows}</tbody>`;
+  };
+  renderPdPdrb(); renderPdEks();
+  const showPdrb = () => { if(pdPdrbTable){ pdPdrbTable.parentElement.style.display='block'; } if(pdEksTable){ pdEksTable.parentElement.style.display='none'; } };
+  const showEks = () => { if(pdPdrbTable){ pdPdrbTable.parentElement.style.display='none'; } if(pdEksTable){ pdEksTable.parentElement.style.display='block'; } };
+  if (pdTabPdrb) pdTabPdrb.onclick = showPdrb;
+  if (pdTabEks) pdTabEks.onclick = showEks;
+  showPdrb();
+  const toggle = (el,show) => { if (el) el.style.display = show ? 'block' : 'none'; };
+  if (pdAddPdrb) pdAddPdrb.onclick = () => { toggle(pdPdrbInline,true); toggle(pdEksInline,false); };
+  if (pdAddEks) pdAddEks.onclick = () => { toggle(pdEksInline,true); toggle(pdPdrbInline,false); };
+  if (pdPdrbCancel) pdPdrbCancel.onclick = () => toggle(pdPdrbInline,false);
+  if (pdEksCancel) pdEksCancel.onclick = () => toggle(pdEksInline,false);
+  if (pdPdrbSave) pdPdrbSave.onclick = () => {
+    const row = { uraian: pdPdrbUra?.value?.trim()||'', y2025:getVal('pd-pdrb-2025'), y2026:getVal('pd-pdrb-2026'), y2027:getVal('pd-pdrb-2027'), y2028:getVal('pd-pdrb-2028'), y2029:getVal('pd-pdrb-2029') };
+    if (!row.uraian) { Utils.showToast('Isi uraian', 'error'); return; }
+    pdPdrbRows.unshift(row); saveJson(pdPdrbKey,pdPdrbRows); renderPdPdrb(); toggle(pdPdrbInline,false); Utils.showToast('Data Perdagangan disimpan', 'success');
+  };
+  if (pdEksSave) pdEksSave.onclick = () => {
+    const row = { uraian: pdExUra?.value?.trim()||'', y2019:getVal('pd-eks-2019'), y2020:getVal('pd-eks-2020'), y2021:getVal('pd-eks-2021'), y2022:getVal('pd-eks-2022'), y2023:getVal('pd-eks-2023') };
+    if (!row.uraian) { Utils.showToast('Isi uraian', 'error'); return; }
+    pdEksRows.unshift(row); saveJson(pdEksKey,pdEksRows); renderPdEks(); toggle(pdEksInline,false); Utils.showToast('Data Perdagangan disimpan', 'success');
+  };
+
+  const setupPanel = (prefix, years, storageKey) => {
+    const table = document.getElementById(`${prefix}-table`);
+    const addBtn = document.getElementById(`${prefix}-add`);
+    const inline = document.getElementById(`${prefix}-inline`);
+    const ura = document.getElementById(`${prefix}-uraian`);
+    const cancelBtn = document.getElementById(`${prefix}-cancel`);
+    const saveBtn = document.getElementById(`${prefix}-save`);
+    let rows = loadJson(storageKey);
+    const render = () => {
+      const headYears = years.map(y=>`<th>${y}</th>`).join('');
+      const body = rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.uraian}</td>${years.map(y=>`<td>${r[`y${y}`]||'-'}</td>`).join('')}</tr>`).join('');
+      if (table) table.innerHTML = `<thead><tr><th>No.</th><th>Uraian</th>${headYears}</tr></thead><tbody>${body}</tbody>`;
+    };
+    render();
+    const toggleInline = (show) => { if (inline) inline.style.display = show ? 'block' : 'none'; };
+    if (addBtn) addBtn.onclick = () => { toggleInline(true); };
+    if (cancelBtn) cancelBtn.onclick = () => toggleInline(false);
+    if (saveBtn) saveBtn.onclick = () => {
+      const row = { uraian: ura?.value?.trim() || '' };
+      if (!row.uraian) { Utils.showToast('Isi uraian', 'error'); return; }
+      years.forEach(y=> { row[`y${y}`] = document.getElementById(`${prefix}-${y}`)?.value?.trim() || ''; });
+      rows.unshift(row); saveJson(storageKey, rows); render(); toggleInline(false); Utils.showToast('Data disimpan', 'success');
+    };
+  };
+
+  setupPanel('pkb',[2019,2020,2021,2022,2023],'sipandu_dm_perkebunan');
+  setupPanel('ktp',[2019,2020,2021,2022,2023],'sipandu_dm_ketapang');
+  setupPanel('pws',[2019,2020,2021,2022,2023],'sipandu_dm_pariwisata');
+  setupPanel('dlh',[2019,2020,2021,2022,2023],'sipandu_dm_dlh');
+  setupPanel('prk',[2019,2020,2021,2022,2023],'sipandu_dm_perikanan');
 
   const notifications = document.getElementById('notifications');
   const userMenu = document.getElementById('user-menu');

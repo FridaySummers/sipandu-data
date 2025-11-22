@@ -296,7 +296,7 @@ class AuthHandler {
   // Logout user
   logout() {
     appState.clearUser();
-    window.location.href = 'index.html';
+    window.location.href = '/fe';
   }
 
   // Check if user is authenticated
@@ -437,7 +437,11 @@ function initLandingPage() {
   // Render dinas grid
   UIComponents.renderDinasGrid();
 
-  
+  const logoutFlag = localStorage.getItem('sipandu_logout_ok');
+  if (logoutFlag) {
+    localStorage.removeItem('sipandu_logout_ok');
+    Utils.showToast('Anda telah keluar', 'success');
+  }
 
   // Animate statistics on scroll
   const observerOptions = {
@@ -513,9 +517,9 @@ function initLoginPage() {
         const user = await authHandler.authenticate(username, password, role);
         Utils.showToast(`Welcome, ${user.name}!`, 'success');
 
-        // Redirect to dashboard
+        // Redirect to dashboard (served by PHP)
         setTimeout(() => {
-          window.location.href = 'dashboard.html';
+          window.location.href = '/fe/dashboard';
         }, 1000);
       } catch (error) {
         Utils.showToast('Login failed: ' + error.message, 'error');
@@ -555,9 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Determine current page and initialize
   const pathname = window.location.pathname;
 
-  if (pathname.includes('login.html')) {
+  if (pathname.includes('login.html') || pathname.includes('/fe/login')) {
     initLoginPage();
-  } else if (pathname.includes('dashboard.html')) {
+  } else if (pathname.includes('dashboard.html') || pathname.includes('/fe/dashboard')) {
     // Dashboard initialization will be handled by dashboard.js
     console.log('Dashboard page detected');
   } else {
@@ -573,3 +577,74 @@ document.addEventListener('DOMContentLoaded', () => {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { Utils, AuthHandler, UIComponents, dinasData, appState };
 }
+// Global dropdown interactions (works across pages)
+document.addEventListener('DOMContentLoaded', () => {
+  const notif = document.getElementById('notifications');
+  const user = document.getElementById('user-menu');
+  const notifDd = document.getElementById('notification-dropdown');
+  const userDd = document.getElementById('user-dropdown');
+  const hasDataset = (el) => el && el.dataset && el.dataset.dropdown;
+  const toggleNotif = (e) => { e.stopPropagation(); if (notifDd) { notifDd.classList.toggle('show'); } if (userDd) { userDd.classList.remove('show'); } };
+  const toggleUser = (e) => { e.stopPropagation(); if (userDd) { userDd.classList.toggle('show'); } if (notifDd) { notifDd.classList.remove('show'); } };
+  if (notif && !hasDataset(notif)) { notif.addEventListener('click', toggleNotif); notif.addEventListener('mousedown', (e)=>e.stopPropagation()); }
+  if (user && !hasDataset(user)) { user.addEventListener('click', toggleUser); user.addEventListener('mousedown', (e)=>e.stopPropagation()); }
+  document.querySelectorAll('.dropdown').forEach(dd => dd.addEventListener('click', (e)=> e.stopPropagation()));
+  document.addEventListener('click', (e) => {
+    const inDropdown = e.target.closest('.dropdown');
+    if (inDropdown) {
+      return;
+    }
+    const trigger = e.target.closest('[data-dropdown]');
+    if (trigger) {
+      e.stopPropagation();
+      const id = trigger.dataset.dropdown; const dd = document.getElementById(id);
+      if (dd) {
+        document.querySelectorAll('.dropdown.show').forEach(x=>{ if (x !== dd) x.classList.remove('show'); });
+        dd.classList.toggle('show');
+      }
+      return;
+    }
+    notifDd?.classList.remove('show'); userDd?.classList.remove('show');
+  }, true);
+
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    const showConfirmLogout = () => {
+      let overlay = document.getElementById('global-confirm-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'global-confirm-overlay';
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+          <div class="modal">
+            <div class="modal-header"><h3>Konfirmasi Keluar</h3><button class="btn btn-outline btn-sm" id="gc-close">✕</button></div>
+            <div class="modal-body"><p>Anda yakin ingin keluar dari SIPANDU DATA?</p></div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="gc-cancel">Batal</button><button class="btn btn-primary" id="gc-ok"><i class="fas fa-sign-out-alt"></i> Keluar</button></div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'transparent';
+        overlay.style.display = 'none';
+        overlay.style.alignItems = 'flex-start';
+        overlay.style.justifyContent = 'center';
+        overlay.style.paddingTop = '12px';
+        overlay.style.zIndex = '10000';
+        const modalEl = overlay.querySelector('.modal');
+        if (modalEl) { modalEl.style.maxWidth = '420px'; modalEl.style.margin = '0 auto'; }
+        const close = () => { overlay.style.display = 'none'; };
+        overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(); });
+        overlay.querySelector('#gc-close').onclick = close;
+        overlay.querySelector('#gc-cancel').onclick = close;
+        overlay.querySelector('#gc-ok').onclick = () => { localStorage.setItem('sipandu_logout_ok','1'); authHandler.logout(); };
+      }
+      overlay.style.display = 'flex';
+    };
+    logoutBtn.dataset.enhanced = '1';
+    logoutBtn.addEventListener('click', (e) => { e.preventDefault(); showConfirmLogout(); });
+  }
+});

@@ -12,6 +12,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect('/dashboard');
         }
+
         return view('login');
     }
 
@@ -19,11 +20,12 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
         ]);
 
         if (Auth::attempt($validated, $request->filled('remember'))) {
             $request->session()->regenerate();
+
             return redirect()->intended('/dashboard');
         }
 
@@ -37,6 +39,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

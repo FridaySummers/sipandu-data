@@ -22,11 +22,8 @@
     @stack('styles')
 </head>
 <body class="@yield('body-class', 'force-light')">
-    @if(auth()->check())
-        <!-- Authenticated User Navigation -->
-        @include('components.top-nav')
-        @include('components.sidebar')
-    @endif
+    @include('components.top-nav')
+    @include('components.sidebar')
     
     <main class="main-content">
         @yield('content')
