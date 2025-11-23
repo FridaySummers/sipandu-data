@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (pathname.includes('login.html') || pathname.includes('/fe/login')) {
     initLoginPage();
-  } else if (pathname.includes('dashboard.html') || pathname.includes('/fe/dashboard')) {
+  } else if (pathname.includes('dashboard.html') || pathname.includes('/fe/dashboard') || pathname === ('/dashboard') {
     // Dashboard initialization will be handled by dashboard.js
     console.log('Dashboard page detected');
   } else {

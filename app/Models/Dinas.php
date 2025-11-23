@@ -6,17 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Dinas extends Model
 {
-    protected \ = [
-        'nama',
-        'deskripsi',
-        'status',
+    protected $table = 'dinas';
+    protected $fillable = [
+        'nama_dinas',
+        'kode_dinas',
         'kepala_dinas',
-        'email',
-        'telepon'
+        'alamat',
+        'telepon',
+        'jumlah_target_data',
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 
     public function submissions()
     {
-        return \->hasMany(DataSubmission::class);
+        return $this->hasMany(DataSubmission::class);
     }
 }

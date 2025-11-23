@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DataSubmission;
 use App\Models\Dinas;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -14,15 +15,13 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $dinasCount = class_exists(Dinas::class) ? (int) Dinas::count() : 0;
-        $submissionsCount = class_exists(DataSubmission::class) ? (int) DataSubmission::count() : 0;
-        $pendingSubmissions = class_exists(DataSubmission::class) ? (int) DataSubmission::where('status', 'pending')->count() : 0;
-
-        return view('dashboard', [
-            'dinasCount' => $dinasCount,
-            'submissionsCount' => $submissionsCount,
-            'pendingSubmissions' => $pendingSubmissions,
-        ]);
+        $totalDinas = Dinas::count();
+        $totalDataSubmissions = DataSubmission::count();
+        $pendingData = DataSubmission::where('status', 'pending')->count();
+        $approvedData = DataSubmission::where('status', 'approved')->count();
+        $targetGlobal = $totalDinas * 10; //target per dinas 10 data submission
+        $progresspercent = $targetGlobal > 0 ? ($totalDataSubmissions / $targetGlobal) * 100 : 0;
+        return view('dashboard', compact('totalDinas', 'totalDataSubmissions', 'pendingData', 'approvedData', 'progresspercent'));
     }
 
     public function reports()

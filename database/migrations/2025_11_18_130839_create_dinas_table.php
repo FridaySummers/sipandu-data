@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('dinas', function (Blueprint $table) {
             $table->id();
+            $table->string('nama_dinas'); // Contoh: Dinas Perdagangan
+            $table->string('kode_dinas')->unique(); // Contoh: perdagangan (untuk slug URL)
+            $table->string('kepala_dinas')->nullable();
+            $table->string('alamat')->nullable();
+            $table->string('telepon')->nullable();
+            $table->integer('jumlah_target_data')->default(0); // Untuk KPI di Dashboard
             $table->timestamps();
         });
-    }
+    }   
 
     /**
      * Reverse the migrations.

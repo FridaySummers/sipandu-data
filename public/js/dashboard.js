@@ -15,7 +15,7 @@ class DashboardManager {
     this.initializeUI();
     this.bindEvents();
     this.loadDashboardData();
-    this.renderActivityFeed();
+    //this.renderActivityFeed(); DIMATIIN AGAR TIDAK TERTIMPA DENGAN DATABASE
     const active = document.querySelector('.page.active');
     if (active && active.id) {
       const pageName = active.id.replace('-page','');
@@ -637,7 +637,7 @@ class DashboardManager {
   loadDashboardData() {
     // Simulate API call
     setTimeout(() => {
-      this.updateKPICards();
+      //this.updateKPICards(); DIMATIIN DULU UNTUK BACKEND biar engga ketimpa data demo fe
       this.initializeCharts();
     }, 500);
   }
@@ -818,10 +818,10 @@ let autoRefresh;
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
   const initOnFe = path.startsWith('/fe/');
-  if (path.includes('dashboard.html') || initOnFe) {
+  if (path.includes('dashboard.html') || initOnFe || path === '/dashboard') {
     dashboardManager = new DashboardManager();
     const routeMap = {
-      '/fe/dashboard': 'dashboard',
+      '/dashboard': 'dashboard',
       '/fe/datamanagement': 'data-management',
       '/fe/reports': 'reports',
       '/fe/forum': 'forum',
@@ -836,8 +836,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start auto-refresh only on dashboard
     if (!initOnFe || path === '/fe/dashboard' || path.includes('dashboard.html')) {
-      autoRefresh = new AutoRefresh(dashboardManager);
-      autoRefresh.start();
+      //autoRefresh = new AutoRefresh(dashboardManager);
+      //autoRefresh.start();
     }
 
     // Handle window resize

@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('forums', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->string('judul_topik');
+            $table->text('isi_diskusi');
+            $table->string('kategori')->default('Umum'); // Umum, Data, Teknis
             $table->timestamps();
         });
     }
