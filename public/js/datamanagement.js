@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-  if (!authHandler.isAuthenticated()) { window.location.href = '/fe/login'; return; }
   const current = authHandler.getCurrentUser();
   const userName = document.getElementById('user-name');
   const sidebarUserName = document.getElementById('sidebar-user-name');
   const sidebarUserRole = document.getElementById('sidebar-user-role');
-  if (userName) userName.textContent = current.name;
-  if (sidebarUserName) sidebarUserName.textContent = current.name;
-  if (sidebarUserRole) sidebarUserRole.textContent = current.position;
+  if (current) {
+    if (userName) userName.textContent = current.name;
+    if (sidebarUserName) sidebarUserName.textContent = current.name;
+    if (sidebarUserRole) sidebarUserRole.textContent = current.position;
+  }
 
   UIComponents.renderNotifications();
 
@@ -14,17 +15,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadRecords = () => { try { return JSON.parse(localStorage.getItem(storageKey)) || []; } catch { return []; } };
   const saveRecords = (data) => { localStorage.setItem(storageKey, JSON.stringify(data)); };
   let records = loadRecords();
+  if (!records.length) {
+    records = [
+      { id: Date.now()+1, opd:'Perdagangan', category:'Harga', name:'Harga Bahan Pokok 2025', period:new Date().toLocaleString('id-ID',{month:'short',year:'numeric'}), status:'Approved', pic:'1111', priority:'Medium', progress:100, createdAt:new Date().toISOString(), files:[], schema:{} },
+      { id: Date.now()+2, opd:'Perindustrian', category:'Produksi', name:'Output Industri 2025', period:new Date().toLocaleString('id-ID',{month:'short',year:'numeric'}), status:'In Review', pic:'1111', priority:'High', progress:60, createdAt:new Date().toISOString(), files:[], schema:{} },
+      { id: Date.now()+3, opd:'Koperasi', category:'SDM', name:'Pelatihan Koperasi 2025', period:new Date().toLocaleString('id-ID',{month:'short',year:'numeric'}), status:'Pending', pic:'1111', priority:'Low', progress:0, createdAt:new Date().toISOString(), files:[], schema:{} },
+      { id: Date.now()+4, opd:'Tanaman Pangan', category:'Produksi', name:'Produksi Padi 2025', period:new Date().toLocaleString('id-ID',{month:'short',year:'numeric'}), status:'Approved', pic:'1111', priority:'Medium', progress:90, createdAt:new Date().toISOString(), files:[], schema:{} },
+      { id: Date.now()+5, opd:'DLH', category:'SDM', name:'Kualitas Udara 2025', period:new Date().toLocaleString('id-ID',{month:'short',year:'numeric'}), status:'In Review', pic:'1111', priority:'Medium', progress:55, createdAt:new Date().toISOString(), files:[], schema:{} }
+    ];
+    saveRecords(records);
+  }
 
   const searchInput = document.getElementById('dm-search');
   const statusFilter = document.getElementById('dm-status-filter');
+  const opdFilter = document.getElementById('dm-opd-filter');
+  const priorityFilter = document.getElementById('dm-priority-filter');
   const table = document.getElementById('dm-table');
   const pageText = document.getElementById('dm-page-text');
   const prevPage = document.getElementById('dm-page-prev');
   const nextPage = document.getElementById('dm-page-next');
-  const filterBtn = document.getElementById('dm-filter');
-  const filterPanel = document.getElementById('dm-filter-panel');
-  const filterOPD = document.getElementById('dm-filter-opd');
-  const filterCategory = document.getElementById('dm-filter-category');
+  
   const backBtn = document.getElementById('dm-back');
   // Modal elements
   const modal = document.getElementById('dm-modal');
@@ -48,39 +58,75 @@ document.addEventListener('DOMContentLoaded', () => {
   const sumPeriod = document.getElementById('dm-sum-period');
   const sumPic = document.getElementById('dm-sum-pic');
   const sumFiles = document.getElementById('dm-sum-files');
+  let editId = null;
 
   const fillOPD = (select) => {
-    if (!select) return; if (select.options.length > 1) return;
-    dinasData.forEach(d => { const opt = document.createElement('option'); opt.value = d.name; opt.textContent = d.name; select.appendChild(opt); });
-    if (dinasData.length) select.value = dinasData[0].name;
+    if (!select) return;
+    const current = Array.from(select.options).map(o=>o.value);
+    dinasData.forEach(d => { if (!current.includes(d.name)) { const opt = document.createElement('option'); opt.value = d.name; opt.textContent = d.name; select.appendChild(opt); } });
+    if (select.id === 'dm-opd-filter') { select.value = ''; }
+    if (window.refreshCustomSelect) window.refreshCustomSelect(select);
   };
   let page = 1; const pageSize = 10;
-  const renderTable = (q = '', s = '') => {
+  const renderTable = (q = '', s = '', opd = '', pr = '') => {
     const list = records
+      .map(r => ({...r, priority: r.priority || 'Medium'}))
       .filter(r => r.name.toLowerCase().includes(q.toLowerCase()))
       .filter(r => (s ? r.status === s : true))
-      .filter(r => (filterOPD && filterOPD.value ? r.opd === filterOPD.value : true))
-      .filter(r => (filterCategory && filterCategory.value ? r.category === filterCategory.value : true));
+      .filter(r => (opd ? r.opd === opd : true))
+      .filter(r => (pr ? r.priority === pr : true));
     const total = list.length;
     const start = total ? (page - 1) * pageSize + 1 : 0;
     const end = Math.min(page * pageSize, total);
     const slice = list.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
-    const rows = slice.map(r => `
-      <tr>
+    const rows = slice.map((r, idx) => {
+      const progClass = r.progress >= 80 ? 'high' : (r.progress >= 40 ? 'medium' : 'low');
+      return `
+      <tr class="row-accent ${r.status==='Approved' ? 'accent-green' : (r.status==='In Review' ? 'accent-amber' : 'accent-red')}" data-id="${r.id}">
+        <td>${start + idx}</td>
         <td>${r.opd}</td>
-        <td>${r.category}</td>
         <td>${r.name}</td>
+        <td>${r.category}</td>
         <td>${r.period}</td>
-        <td><span class="status-badge ${r.status==='Approved' ? 'approved' : (r.status==='In Review' ? 'inreview' : 'pending')}">${r.status}</span></td>
+        <td><span class="priority-badge ${r.priority ? r.priority.toLowerCase() : 'medium'}">${r.priority}</span></td>
+        <td><span class="status-badge ${r.status==='Approved' ? 'status-complete' : (r.status==='In Review' ? 'status-progress' : 'status-pending')}">${r.status}</span></td>
         <td>
-          <div class="progress-line"><div class="progress-line-fill" style="width:${r.progress}%; background:#2563eb"></div></div>
+          <div class="progress-line"><div class="progress-line-fill ${progClass}" style="width:${r.progress}%"></div></div>
         </td>
-        <td>${new Date(r.createdAt).toLocaleDateString('id-ID')}</td>
         <td>${r.pic}</td>
-        <td><button class="btn btn-outline btn-sm" data-id="${r.id}">Detail</button></td>
+        <td>${new Date(r.createdAt).toLocaleDateString('id-ID')}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" data-act="edit" data-id="${r.id}" style="color:#2563eb"><i class="fas fa-pen"></i></button>
+          <button class="btn btn-outline btn-sm" data-act="del" data-id="${r.id}" style="color:#ef4444"><i class="fas fa-trash"></i></button>
+        </td>
       </tr>
-    `).join('');
-    table.innerHTML = `<thead><tr><th>Dinas</th><th>Kategori</th><th>Nama Data</th><th>Periode</th><th>Status</th><th class="col-progress">Progress</th><th>Tanggal Update</th><th>Penanggung Jawab</th><th class="col-actions">Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+    `}).join('');
+    table.innerHTML = `<thead><tr><th>No</th><th>Dinas</th><th>Nama Data</th><th>Kategori</th><th>Periode</th><th>Priority</th><th>Status</th><th class="col-progress">Progress</th><th>PIC</th><th>Update</th><th class="col-actions">Aksi</th></tr></thead><tbody>${rows}</tbody>`;
+    if (table) table.querySelectorAll('button[data-act]').forEach(b=>{
+      b.onclick = () => {
+        const id = b.dataset.id; const act = b.dataset.act;
+        if (act === 'del') {
+          Utils.confirm('Hapus data ini?',{okText:'Hapus',cancelText:'Batal',variant:'danger'}).then(function(yes){
+            if(!yes) return;
+            records = records.filter(x=> x.id != id);
+            saveRecords(records);
+            renderTable(searchInput?.value || '', statusFilter?.value || '', opdFilter?.value || '', priorityFilter?.value || '');
+            Utils.showToast('Data dihapus','success');
+          });
+          return;
+        }
+        const item = records.find(x=> x.id == id);
+        if (!item) return;
+        editId = id;
+        addOPD.value = item.opd; addCategory.value = item.category; addName.value = item.name; addPeriod.value = item.period; addPic.value = item.pic;
+        if (addStatus) addStatus.value = item.status;
+        if (addPriority) addPriority.value = item.priority;
+        if (addProgress) addProgress.value = item.progress;
+        refreshPrev(); renderSummary(); renderSchema(addOPD.value);
+        if (window.refreshCustomSelect) window.refreshCustomSelect(addOPD);
+        toggleModal(true);
+      };
+    });
     const complete = records.filter(r=> r.status==='Approved').length;
     const progress = records.filter(r=> r.status==='In Review').length;
     const pending = records.filter(r=> r.status==='Pending').length;
@@ -92,20 +138,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (prevPage) prevPage.disabled = page <= 1;
     if (nextPage) nextPage.disabled = page * pageSize >= total;
   };
-  renderTable('', '');
-  const debouncedRender = Utils.debounce((q, s) => renderTable(q, s), 200);
-  if (searchInput) searchInput.oninput = (e) => { page = 1; debouncedRender(e.target.value, statusFilter?.value || ''); };
-  if (statusFilter) statusFilter.onchange = (e) => { page = 1; renderTable(searchInput?.value || '', e.target.value); };
-  if (filterBtn && filterPanel) filterBtn.onclick = () => { filterPanel.style.display = filterPanel.style.display === 'none' ? 'block' : 'none'; };
-  if (filterOPD && filterOPD.options.length <= 1) { dinasData.forEach(d => { const opt=document.createElement('option'); opt.value=d.name; opt.textContent=d.name; filterOPD.appendChild(opt); }); }
-  if (filterOPD) filterOPD.onchange = () => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
-  if (filterCategory) filterCategory.onchange = () => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
-  if (prevPage) prevPage.onclick = () => { if (page > 1) { page--; renderTable(searchInput?.value || '', statusFilter?.value || ''); } };
-  if (nextPage) nextPage.onclick = () => { page++; renderTable(searchInput?.value || '', statusFilter?.value || ''); };
+  renderTable('', '', '', '');
+  const debouncedRender = Utils.debounce((q, s, o, p) => renderTable(q, s, o, p), 200);
+  if (searchInput) searchInput.oninput = (e) => { page = 1; debouncedRender(e.target.value, statusFilter?.value || '', opdFilter?.value || '', priorityFilter?.value || ''); };
+  if (statusFilter) statusFilter.onchange = (e) => { page = 1; renderTable(searchInput?.value || '', e.target.value, opdFilter?.value || '', priorityFilter?.value || ''); };
+  if (opdFilter) opdFilter.onchange = (e) => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || '', e.target.value, priorityFilter?.value || ''); };
+  if (priorityFilter) priorityFilter.onchange = (e) => { page = 1; renderTable(searchInput?.value || '', statusFilter?.value || '', opdFilter?.value || '', e.target.value); };
+  
+  if (prevPage) prevPage.onclick = () => { if (page > 1) { page--; renderTable(searchInput?.value || '', statusFilter?.value || '', opdFilter?.value || '', priorityFilter?.value || ''); } };
+  if (nextPage) nextPage.onclick = () => { page++; renderTable(searchInput?.value || '', statusFilter?.value || '', opdFilter?.value || '', priorityFilter?.value || ''); };
 
   if (backBtn) backBtn.onclick = () => { if (window.history.length > 1) { window.history.back(); } else { window.location.href = 'dashboard.html'; } };
 
   fillOPD(addOPD);
+  fillOPD(opdFilter);
+  if (window.refreshCustomSelect) { window.refreshCustomSelect(addOPD); window.refreshCustomSelect(opdFilter); }
   addPeriod.value = new Date().toLocaleString('id-ID', { month: 'short', year: 'numeric' });
 
   const schemas = {
@@ -173,7 +220,14 @@ document.addEventListener('DOMContentLoaded', () => {
   addPic.oninput = renderSummary;
 
   const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
-  if (openBtn) openBtn.onclick = () => { toggleModal(true); refreshPrev(); renderSummary(); renderSchema(addOPD.value); };
+  if (openBtn) openBtn.onclick = () => {
+    fillOPD(addOPD);
+    if (window.refreshCustomSelect) window.refreshCustomSelect(addOPD);
+    toggleModal(true);
+    refreshPrev();
+    renderSummary();
+    renderSchema(addOPD.value);
+  };
   if (closeBtn) closeBtn.onclick = () => toggleModal(false);
   if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
   if (modal) modal.addEventListener('click', (e)=> { if (e.target === modal) toggleModal(false); });
@@ -187,26 +241,39 @@ document.addEventListener('DOMContentLoaded', () => {
     addDropzone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
   }
 
+  const addStatus = document.getElementById('dm-add-status');
+  const addPriority = document.getElementById('dm-add-priority');
+  const addProgress = document.getElementById('dm-add-progress');
   if (saveBtn) saveBtn.onclick = () => {
     if (!addOPD.value || !addCategory.value || !addName.value || !addPeriod.value) { Utils.showToast('Lengkapi data', 'error'); return; }
     const rec = {
-      id: Date.now(),
+      id: editId || Date.now(),
       opd: addOPD.value,
       category: addCategory.value,
       name: addName.value,
       period: addPeriod.value,
-      status: 'Pending',
+      status: addStatus?.value || 'Pending',
       pic: addPic.value || current.name,
-      progress: 0,
+      priority: addPriority?.value || 'Medium',
+      progress: Number(addProgress?.value || 0),
       createdAt: new Date().toISOString(),
       files: tempFiles,
       schema: collectSchemaValues()
     };
-    records.unshift(rec);
+    if (editId) { records = records.map(x=> x.id===editId ? { ...rec, createdAt: x.createdAt } : x); } else { records.unshift(rec); }
     saveRecords(records);
-    renderTable(searchInput?.value || '', statusFilter?.value || '');
-    Utils.showToast('Data ditambahkan', 'success');
+    page = 1;
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
+    if (opdFilter) opdFilter.value = '';
+    if (priorityFilter) priorityFilter.value = '';
+    if (window.refreshCustomSelect) window.refreshCustomSelect(opdFilter);
+    renderTable('', '', '', '');
+    Utils.showToast(editId ? 'Data diperbarui' : 'Data ditambahkan', 'success');
     toggleModal(false);
+    editId = null;
+    const newRow = table?.querySelector(`tbody tr[data-id="${rec.id}"]`);
+    if (newRow) { newRow.classList.add('row-new'); newRow.scrollIntoView({block:'nearest'}); }
   };
 
   const dpmKey = 'sipandu_dm_dpmptsp';
@@ -245,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
       b.onclick = () => {
         const id=b.dataset.id; const act=b.dataset.act; const item=dpmRows.find(x=> x.id==id);
         if (!item) return;
-        if (act==='del') { dpmRows = dpmRows.filter(x=> x.id!=id); saveDpm(dpmRows); renderDpm(); return; }
+        if (act==='del') { Utils.confirm('Hapus data DPMPTSP ini?',{okText:'Hapus',cancelText:'Batal',variant:'danger'}).then(function(yes){ if(!yes) return; dpmRows = dpmRows.filter(x=> x.id!=id); saveDpm(dpmRows); renderDpm(); Utils.showToast('Data DPMPTSP dihapus','success'); }); return; }
         dpmEditId = id;
         dpmInd.value = item.indikator; dpmTipe.value = item.tipe;
         dpmY25.value = item.y2025||''; dpmY26.value = item.y2026||''; dpmY27.value = item.y2027||''; dpmY28.value = item.y2028||''; dpmY29.value = item.y2029||'';
