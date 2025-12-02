@@ -53,36 +53,4 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Dinas::class);
     }
-
-    // Role helper methods
-    public function isSuperAdmin()
-    {
-        return $this->role === 'super_admin';
-    }
-
-    public function isAdminDinas()
-    {
-        return $this->role === 'admin_dinas';
-    }
-
-    public function isUser()
-    {
-        return $this->role === 'user';
-    }
-
-    // Scope untuk filtering data berdasarkan role
-    public function scopeByRole($query)
-    {
-        $user = auth()->user();
-        
-        if ($user->isAdminDinas()) {
-            return $query->where('dinas_id', $user->dinas_id);
-        }
-        
-        if ($user->isUser()) {
-            return $query->where('id', $user->id);
-        }
-        
-        return $query; // Super Admin bisa lihat semua
-    }
 }

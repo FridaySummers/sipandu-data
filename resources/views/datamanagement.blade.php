@@ -13,6 +13,59 @@
         <div class="kpi-card" id="kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Pending Review</div></div><div class="kpi-delta" id="kpi-pending-delta">+0</div></div>
       </div>
 
+      @php($role = auth()->user()->role ?? null)
+      @if(in_array($role, ['super_admin','admin_dinas']))
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div class="dm-hero" style="width:100%">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="user-avatar" style="width:36px;height:36px;background:#f59e0b"><i class="fas fa-bell"></i></div>
+              <div>
+                <h3>Notifikasi Review</h3>
+                <div class="thread-meta">Pengajuan menunggu persetujuan</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          @if(($pendingSubmissions ?? collect())->count() === 0)
+            <div class="file-item"><div>Tidak ada pengajuan pending</div></div>
+          @else
+            <div class="review-list">
+              @foreach($pendingSubmissions as $s)
+              <div class="review-item" data-id="{{ $s->id }}" data-title="{{ $s->judul_data }}">
+                <div class="review-main">
+                  <div class="review-title">{{ $s->judul_data }}</div>
+                  <div class="review-meta">{{ optional($s->dinas)->nama_dinas }} • {{ $s->tahun_perencanaan }}</div>
+                  <div class="chip-row">
+                    <span class="chip chip-warning">Pending</span>
+                    <span class="chip chip-light">File: {{ Str::limit($s->file_path, 24) }}</span>
+                  </div>
+                </div>
+                <div class="review-actions">
+                  <button class="btn btn-primary btn-sm review-approve" data-id="{{ $s->id }}"
+                          data-opd="{{ optional($s->dinas)->nama_dinas }}" data-name="{{ $s->judul_data }}"
+                          data-category="Produksi" data-period="{{ $s->tahun_perencanaan }}" data-pic="{{ auth()->user()->name }}">
+                    <i class="fas fa-check"></i> Terima
+                  </button>
+                  <button class="btn btn-outline btn-sm review-reject" data-id="{{ $s->id }}"><i class="fas fa-times"></i> Tolak</button>
+                  <button class="btn btn-outline btn-sm review-detail"><i class="fas fa-eye"></i> Detail</button>
+                </div>
+              </div>
+              <div class="review-detail-panel" id="detail-{{ $s->id }}" style="display:none">
+                <div class="detail-grid">
+                  <div><div class="detail-label">Deskripsi</div><div class="detail-value">{{ $s->deskripsi }}</div></div>
+                  <div><div class="detail-label">File Path</div><div class="detail-value">{{ $s->file_path }}</div></div>
+                  <div><div class="detail-label">Dibuat</div><div class="detail-value">{{ optional($s->created_at)->format('d/m/Y H:i') }}</div></div>
+                </div>
+              </div>
+              @endforeach
+            </div>
+          @endif
+        </div>
+      </div>
+      @endif
+
 
       <div class="card">
         <div class="card-header">
@@ -27,14 +80,13 @@
               </div>
               <div style="display:flex;gap:10px;align-items:center;">
                 <button class="btn btn-outline btn-wide" id="dm-export"><i class="fas fa-file-export"></i> Export</button>
-                <button class="btn btn-primary btn-wide" id="dm-add-open"><i class="fas fa-plus"></i> Tambah Data</button>
+                <button class="btn btn-primary btn-wide" id="dm-add-open"><i class="fas fa-paper-plane"></i> Ajukan Data</button>
               </div>
             </div>
             <div class="controls-row">
               <div class="search-box compact"><i class="fas fa-search"></i><input id="dm-search" type="text" placeholder="Cari data..."></div>
-              <select id="dm-status-filter" class="form-control"><option value="">Semua Status</option><option value="Approved">Approved</option><option value="In Review">In Review</option><option value="Pending">Pending</option></select>
+              <select id="dm-status-filter" class="form-control"><option value="">Semua Status</option><option value="Approved">Approved</option><option value="In Review">In Review</option><option value="Pending">Pending</option><option value="Rejected">Rejected</option></select>
               <select id="dm-opd-filter" class="form-control"><option value="">Semua Dinas</option></select>
-              <select id="dm-priority-filter" class="form-control"><option value="">Semua Priority</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
             </div>
           </div>
         </div>
@@ -48,18 +100,18 @@
               <button class="btn btn-outline btn-sm" id="dm-page-next"><i class="fas fa-chevron-right"></i></button>
             </div>
           </div>
+          
         </div>
       </div>
 
       <div class="modal-overlay" id="dm-modal" style="display:none;">
         <div class="modal">
-          <div class="modal-header"><h3>Tambah Data Baru</h3><button class="btn btn-outline btn-sm" id="dm-add-close"><i class="fas fa-times"></i></button></div>
+          <div class="modal-header"><h3>Ajukan Data Baru</h3><button class="btn btn-outline btn-sm" id="dm-add-close"><i class="fas fa-times"></i></button></div>
           <div class="modal-body">
             <div class="tip-bar"><i class="fas fa-lightbulb"></i> Tips: Pastikan semua field wajib (*) sudah terisi sebelum menyimpan.</div>
             <div class="dm-grid">
               <div class="dm-row-2">
                 <div class="form-row"><label>Dinas *</label><select id="dm-add-opd" class="form-control"><option value="">Pilih Dinas</option></select></div>
-                <div class="form-row"><label>Kategori *</label><select id="dm-add-category" class="form-control"><option value="Harga">Harga</option><option value="Produksi">Produksi</option><option value="SDM">SDM</option></select></div>
               </div>
               <div class="form-row"><label>Nama Data *</label><input id="dm-add-name" class="form-control" placeholder="Contoh: Data Produksi Tahun 2024"></div>
               <div class="dm-row-2">
@@ -68,14 +120,12 @@
               </div>
               <div class="dm-row-3">
                 <div class="form-row"><label>Status</label><select id="dm-add-status" class="form-control"><option value="Pending">Draft</option><option value="In Review">In Review</option><option value="Approved">Approved</option></select></div>
-                <div class="form-row"><label>Priority</label><select id="dm-add-priority" class="form-control"><option value="Medium">Medium Priorit</option><option value="High">High</option><option value="Low">Low</option></select></div>
-                <div class="form-row"><label>Progress (%)</label><input id="dm-add-progress" class="form-control" type="number" min="0" max="100" value="0"></div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" id="dm-add-cancel">Batal</button>
-            <button class="btn btn-primary" id="dm-add-save"><i class="fas fa-save"></i> Tambah Data</button>
+            <button class="btn btn-primary" id="dm-add-save"><i class="fas fa-save"></i> Ajukan Data</button>
           </div>
         </div>
       </div>
@@ -110,15 +160,100 @@
 <style>
 #data-management-page #dm-table thead tr{background:#eaf2ff}
 #data-management-page #dm-table thead th{background:transparent;color:#0b3a82;border-bottom:1px solid #c7d2fe;font-weight:600;letter-spacing:0.01em}
+.review-list{display:flex;flex-direction:column;gap:10px}
+.review-item{display:flex;align-items:center;justify-content:space-between;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;background:#ffffff;box-shadow:var(--shadow-sm)}
+.review-title{font-weight:600;color:#111827}
+.review-meta{color:#6b7280;font-size:14px}
+.review-actions{display:flex;gap:8px}
+.chip-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #e5e7eb;background:#fff;color:#374151}
+.chip-warning{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.chip-light{background:#f8fafc;border-color:#e5e7eb;color:#334155}
+.review-detail-panel{border:1px dashed #e5e7eb;border-radius:12px;padding:10px 12px;background:#fcfdff;margin-top:6px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.detail-label{font-weight:600;color:#374151}
+.detail-value{color:#111827}
+.snackbar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:#111827;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:var(--shadow-md);z-index:9999}
 </style>
 @endpush
 
 @push('scripts')
 <script src="{{ asset('js/datamanagement.js') }}"></script>
+<script type="application/json" id="dm-approved-json">{!! json_encode(($approvedRecords ?? collect())->map(function($r){ return [
+  'id' => $r->id,
+  'opd' => optional($r->dinas)->nama_dinas ?? '-',
+  'category' => '-',
+  'name' => $r->name,
+  'period' => $r->period ?? '-',
+  'status' => $r->status,
+  'pic' => $r->pic ?? '',
+  'priority' => 'Medium',
+  'createdAt' => optional($r->created_at)->toIso8601String(),
+  'files' => [],
+  'schema' => [],
+]; })->toArray()) !!}</script>
+<script>window.DM_BASE = "{{ url('/data-management/submissions') }}";</script>
+<script id="dm-flash" type="application/json">{!! json_encode(session('success') ?? session('error') ?? '') !!}</script>
 <script>
   function closeModal(){ const m=document.getElementById('submission-modal'); if(m) m.style.display='none'; }
   const newBtn=document.getElementById('new-submission-btn'); if(newBtn) newBtn.addEventListener('click',()=>{ const m=document.getElementById('submission-modal'); if(m) m.style.display='flex'; });
   window.addEventListener('click',function(e){ const modal=document.getElementById('submission-modal'); if(e.target===modal){ closeModal(); } });
+  (function(){
+    const overlayId='reject-overlay';
+    let ov=document.getElementById(overlayId);
+    if(!ov){
+      ov=document.createElement('div');
+      ov.id=overlayId; ov.className='modal-overlay'; ov.style.display='none';
+      ov.innerHTML=`<div class="modal"><div class="modal-header"><h3>Tolak Pengajuan</h3><button class="btn btn-outline btn-sm" id="rj-close">✕</button></div><form id="rj-form" method="POST"><input type="hidden" name="_token"><div class="modal-body"><div class="form-row"><label>Catatan</label><textarea name="catatan_revisi" class="form-control" rows="3" placeholder="Alasan penolakan"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" id="rj-cancel">Batal</button><button type="submit" class="btn btn-primary"><i class="fas fa-times"></i> Tolak</button></div></form></div>`;
+      document.body.appendChild(ov);
+      const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const inp = ov.querySelector('input[name="_token"]'); if (inp) inp.value = token;
+    }
+    const open=(id)=>{ const f=document.getElementById('rj-form'); if(f){ f.action=(window.DM_BASE||'')+'/'+id+'/reject'; } ov.style.display='flex'; };
+    const close=()=>{ ov.style.display='none'; };
+    document.querySelectorAll('.review-reject').forEach(b=> b.addEventListener('click',()=> open(b.dataset.id)) );
+    ov.querySelector('#rj-close').onclick=close; ov.querySelector('#rj-cancel').onclick=close; ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
+  })();
+  (function(){
+    const overlayId='approve-overlay';
+    let ov=document.getElementById(overlayId);
+    if(!ov){
+      ov=document.createElement('div');
+      ov.id=overlayId; ov.className='modal-overlay'; ov.style.display='none';
+      ov.innerHTML=`<div class="modal"><div class="modal-header"><h3>Terima Pengajuan</h3><button class="btn btn-outline btn-sm" id="ap-close">✕</button></div><form id="ap-form" method="POST"><input type="hidden" name="_token"><div class="modal-body"><div class="tip-bar"><i class="fas fa-lightbulb"></i> Pastikan data sesuai sebelum menyetujui.</div><div class="form-row"><label>Catatan (opsional)</label><input name="catatan_revisi" class="form-control" placeholder="Catatan persetujuan"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" id="ap-cancel">Batal</button><button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Terima</button></div></form></div>`;
+      document.body.appendChild(ov);
+      const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const inp = ov.querySelector('input[name="_token"]'); if (inp) inp.value = token;
+    }
+    const open=(id)=>{ const f=document.getElementById('ap-form'); if(f){ f.action=(window.DM_BASE||'')+'/'+id+'/approve'; } ov.style.display='flex'; };
+    const close=()=>{ ov.style.display='none'; };
+    document.querySelectorAll('.review-approve').forEach(b=> b.addEventListener('click',()=> open(b.dataset.id)) );
+    ov.querySelector('#ap-close').onclick=close; ov.querySelector('#ap-cancel').onclick=close; ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
+  })();
+  (function(){
+    document.querySelectorAll('.review-detail').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const item=btn.closest('.review-item'); if(!item) return; const id=item.dataset.id; const panel=document.getElementById('detail-'+id); if(!panel) return; panel.style.display= panel.style.display==='none' ? 'block' : 'none';
+      });
+    });
+  })();
+  (function(){
+    try {
+      var n = document.getElementById('dm-flash');
+      var msg = n ? JSON.parse(n.textContent || '""') : '';
+      if(msg){ var s=document.createElement('div'); s.className='snackbar'; s.textContent=msg; document.body.appendChild(s); setTimeout(function(){ s.remove(); }, 3000); }
+    } catch(_){ }
+  })();
+  (function(){
+    try {
+      var key='sipandu_dm_records';
+      var cur = []; try{ cur = JSON.parse(localStorage.getItem(key)) || []; }catch(_){ cur = []; }
+      var el = document.getElementById('dm-approved-json');
+      var srv = []; try{ srv = JSON.parse((el && el.textContent) ? el.textContent : '[]'); }catch(_){ srv = []; }
+      var merged = srv.concat(cur.filter(function(c){ return !srv.some(function(s){ return s.name===c.name && s.period===c.period && s.opd===c.opd; }); }));
+      localStorage.setItem(key, JSON.stringify(merged));
+    } catch(_){ }
+  })();
 </script>
 @endpush
 

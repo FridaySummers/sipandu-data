@@ -59,10 +59,10 @@
 
       <div id="pk-pop">
         <div class="card pk-card theme-green">
-          <div class="card-header"><div><h3>Populasi Ternak (2019-2023)</h3><div class="sub">Ringkasan populasi ternak perkebunan</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-pop-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-pop-add"><i class="fas fa-plus"></i> Tambah Baris</button></div></div>
+          <div class="card-header"><div><h3>Populasi Ternak (2019-2023)</h3><div class="sub">Ringkasan populasi ternak perkebunan</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-pop-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-pop-add"><i class="fas fa-plus"></i> Ajukan Baris</button></div></div>
           <div class="card-body">
             <div class="pk-panel" id="pk-pop-panel" style="display:none;">
-              <div class="form-group"><label>Uraian</label><input type="text" id="pop-uraian" class="form-control" placeholder="Contoh: Sapi Potong"></div>
+              <div class="form-group"><label>Nama Data</label><input type="text" id="pop-uraian" class="form-control" placeholder="Contoh: Nama Data"></div>
               <div class="pk-grid pk-grid-6">
                 <div class="year-group"><div class="year-label">2019</div><input class="form-control" id="pop-2019" placeholder="0.00"></div>
                 <div class="year-group"><div class="year-label">2020</div><input class="form-control" id="pop-2020" placeholder="0.00"></div>
@@ -80,10 +80,10 @@
 
       <div id="pk-prod" style="display:none;">
         <div class="card pk-card theme-amber">
-          <div class="card-header"><div><h3>Produksi Tanaman Perkebunan (2019-2023)</h3><div class="sub">Rekap produksi tiap komoditas</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-prod-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-prod-add"><i class="fas fa-plus"></i> Tambah Komoditas</button></div></div>
+          <div class="card-header"><div><h3>Produksi Tanaman Perkebunan (2019-2023)</h3><div class="sub">Rekap produksi tiap komoditas</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-prod-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-prod-add"><i class="fas fa-plus"></i> Ajukan Komoditas</button></div></div>
           <div class="card-body">
             <div class="pk-panel" id="pk-prod-panel" style="display:none;">
-              <div class="form-group"><label>Komoditas</label><input type="text" id="prod-uraian" class="form-control" placeholder="Contoh: Kakao"></div>
+              <div class="form-group"><label>Nama Data</label><input type="text" id="prod-uraian" class="form-control" placeholder="Contoh: Nama Data"></div>
               <div class="pk-grid pk-grid-5">
                 <div class="year-group"><div class="year-label">2019</div><input class="form-control" id="prod-2019" placeholder="0.00"></div>
                 <div class="year-group"><div class="year-label">2020</div><input class="form-control" id="prod-2020" placeholder="0.00"></div>
@@ -100,10 +100,10 @@
 
       <div id="pk-luas" style="display:none;">
         <div class="card pk-card theme-teal">
-          <div class="card-header"><div><h3>Luas Areal Tanaman Perkebunan (ha)</h3><div class="sub">Perkembangan luas areal komoditas</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-luas-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-luas-add"><i class="fas fa-plus"></i> Tambah Komoditas</button></div></div>
+          <div class="card-header"><div><h3>Luas Areal Tanaman Perkebunan (ha)</h3><div class="sub">Perkembangan luas areal komoditas</div></div><div class="card-actions"><button class="btn btn-outline btn-sm" id="pk-luas-export"><i class="fas fa-download"></i> Export</button> <button class="btn btn-green btn-sm" id="pk-luas-add"><i class="fas fa-plus"></i> Ajukan Komoditas</button></div></div>
           <div class="card-body">
             <div class="pk-panel" id="pk-luas-panel" style="display:none;">
-              <div class="form-group"><label>Komoditas</label><input type="text" id="luas-uraian" class="form-control" placeholder="Contoh: Kelapa"></div>
+              <div class="form-group"><label>Nama Data</label><input type="text" id="luas-uraian" class="form-control" placeholder="Contoh: Nama Data"></div>
               <div class="pk-grid pk-grid-5">
                 <div class="year-group"><div class="year-label">2019</div><input class="form-control" id="luas-2019" placeholder="0.00"></div>
                 <div class="year-group"><div class="year-label">2020</div><input class="form-control" id="luas-2020" placeholder="0.00"></div>
@@ -122,39 +122,95 @@
 
 @push('scripts')
 <script>
-var popData=[{no:1,uraian:"Sapi Potong",y2019:"",y2020:"",y2021:"",y2022:"",y2023:"",trend:""},{no:2,uraian:"Kambing",y2019:"",y2020:"",y2021:"",y2022:"",y2023:"",trend:""}];
-var prodData=[{no:1,uraian:"Kakao",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""},{no:2,uraian:"Kopi",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""},{no:3,uraian:"Kelapa",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""}];
-var luasData=[{no:1,uraian:"Kakao",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""},{no:2,uraian:"Cengkeh",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""},{no:3,uraian:"Kopi",y2019:"",y2020:"",y2021:"",y2022:"",y2023:""}];
-function renderRows(data,tb,includeTrend,key){tb.innerHTML=data.map(function(r,i){var cells='<td>'+r.no+'</td><td class="c-uraian">'+r.uraian+'</td><td class="c-y2019">'+r.y2019+'</td><td class="c-y2020">'+r.y2020+'</td><td class="c-y2021">'+r.y2021+'</td><td class="c-y2022">'+r.y2022+'</td><td class="c-y2023">'+r.y2023+'</td>';if(includeTrend){cells+='<td class="c-trend">'+(r.trend||'')+'</td>';}cells+='<td><button class="btn btn-outline btn-sm action-btn" data-pk-ed="'+key+':'+i+'"><i class="fas fa-pen"></i></button> <button class="btn btn-outline btn-sm action-btn" data-pk-del="'+key+':'+i+'"><i class="fas fa-trash"></i></button></td>';return '<tr data-row="'+r.no+'">'+cells+'</tr>';}).join('');}
-function init(){renderRows(popData,document.getElementById('pk-pop-tbody'),true,'pop');renderRows(prodData,document.getElementById('pk-prod-tbody'),false,'prod');renderRows(luasData,document.getElementById('pk-luas-tbody'),false,'luas');}
-init();
+var csrfToken=document.querySelector('meta[name="csrf-token"]')?.content||'';window.USER_ROLE=document.body.dataset.userRole||'';
+var opdName='Dinas Perkebunan';
+var keys={pop:'perkebunan_populasi',prod:'perkebunan_produksi',luas:'perkebunan_luas'};
+var dinasId=(document.body.dataset.dinasId||'')||null;
+var popRows=[],prodRows=[],luasRows=[];
+function mapPop(data){return (Array.isArray(data)?data:[]).map(function(r,i){var v=r.values||{};return {id:r.id,no:i+1,uraian:r.uraian,y2019:v.y2019||'',y2020:v.y2020||'',y2021:v.y2021||'',y2022:v.y2022||'',y2023:v.y2023||'',trend:v.trend||''};});}
+function mapStd(data){return (Array.isArray(data)?data:[]).map(function(r,i){var v=r.values||{};return {id:r.id,no:i+1,uraian:r.uraian,y2019:v.y2019||'',y2020:v.y2020||'',y2021:v.y2021||'',y2022:v.y2022||'',y2023:v.y2023||''};});}
+function renderRows(data,tb,includeTrend,key){tb.innerHTML=data.map(function(r,i){var cells='<td>'+r.no+'</td><td class="c-uraian">'+r.uraian+'</td><td class="c-y2019">'+(r.y2019||'-')+'</td><td class="c-y2020">'+(r.y2020||'-')+'</td><td class="c-y2021">'+(r.y2021||'-')+'</td><td class="c-y2022">'+(r.y2022||'-')+'</td><td class="c-y2023">'+(r.y2023||'-')+'</td>';if(includeTrend){cells+='<td class="c-trend">'+(r.trend||'-')+'</td>';}cells+='<td><button class="btn btn-outline btn-sm action-btn" data-pk-ed="'+key+':'+i+'"><i class="fas fa-pen"></i></button> <button class="btn btn-outline btn-sm action-btn" data-pk-del="'+key+':'+i+'"><i class="fas fa-trash"></i></button></td>';return '<tr data-row="'+r.no+'">'+cells+'</tr>';}).join('');}
+async function fetchRows(key){try{var url= key==='pop' ? '/perkebunan/pop' : (key==='prod' ? '/perkebunan/prod' : '/perkebunan/luas'); var res=await fetch(url,{headers:{'Accept':'application/json'}});var data=await res.json();if(key==='pop'){popRows=mapPop(data);renderRows(popRows,document.getElementById('pk-pop-tbody'),true,'pop');}else if(key==='prod'){prodRows=mapStd(data);renderRows(prodRows,document.getElementById('pk-prod-tbody'),false,'prod');}else{luasRows=mapStd(data);renderRows(luasRows,document.getElementById('pk-luas-tbody'),false,'luas');}}catch(_){if(key==='pop'){popRows=[];renderRows(popRows,document.getElementById('pk-pop-tbody'),true,'pop');}else if(key==='prod'){prodRows=[];renderRows(prodRows,document.getElementById('pk-prod-tbody'),false,'prod');}else{luasRows=[];renderRows(luasRows,document.getElementById('pk-luas-tbody'),false,'luas');}}}
+document.addEventListener('DOMContentLoaded',function(){fetchRows('pop');fetchRows('prod');fetchRows('luas');});
 function toggleTab(active){['pk-pop','pk-prod','pk-luas'].forEach(function(id){document.getElementById(id).style.display=id===active?'block':'none';});var tp=document.getElementById('pk-tab-pop');var td=document.getElementById('pk-tab-prod');var tl=document.getElementById('pk-tab-luas');[tp,td,tl].forEach(function(b){b.classList.add('btn-outline');b.classList.remove('btn-primary');});if(active==='pk-pop'){tp.classList.add('btn-primary');tp.classList.remove('btn-outline');}else if(active==='pk-prod'){td.classList.add('btn-primary');td.classList.remove('btn-outline');}else{tl.classList.add('btn-primary');tl.classList.remove('btn-outline');}}
 document.getElementById('pk-tab-pop')?.addEventListener('click',function(){toggleTab('pk-pop');});
 document.getElementById('pk-tab-prod')?.addEventListener('click',function(){toggleTab('pk-prod');});
 document.getElementById('pk-tab-luas')?.addEventListener('click',function(){toggleTab('pk-luas');});
-
-function toggle(btn,panel){var open=panel.style.display!=='none';panel.style.display=open?'none':'block';btn.innerHTML=open?'<i class="fas fa-plus"></i> '+(btn.id==='pk-pop-add'?'Tambah Baris':'Tambah Komoditas'):'Tutup Form';}
-document.getElementById('pk-pop-add')?.addEventListener('click',function(){toggle(this,document.getElementById('pk-pop-panel'));});
-document.getElementById('pk-prod-add')?.addEventListener('click',function(){toggle(this,document.getElementById('pk-prod-panel'));});
-document.getElementById('pk-luas-add')?.addEventListener('click',function(){toggle(this,document.getElementById('pk-luas-panel'));});
-
-document.getElementById('pk-pop-cancel')?.addEventListener('click',function(){document.getElementById('pk-pop-panel').style.display='none';document.getElementById('pk-pop-add').textContent='+ Tambah Baris';});
-document.getElementById('pk-prod-cancel')?.addEventListener('click',function(){document.getElementById('pk-prod-panel').style.display='none';document.getElementById('pk-prod-add').textContent='+ Tambah Komoditas';});
-document.getElementById('pk-luas-cancel')?.addEventListener('click',function(){document.getElementById('pk-luas-panel').style.display='none';document.getElementById('pk-luas-add').textContent='+ Tambah Komoditas';});
-
-document.getElementById('pk-pop-save')?.addEventListener('click',function(){popData.push({no:popData.length+1,uraian:document.getElementById('pop-uraian').value,y2019:document.getElementById('pop-2019').value,y2020:document.getElementById('pop-2020').value,y2021:document.getElementById('pop-2021').value,y2022:document.getElementById('pop-2022').value,y2023:document.getElementById('pop-2023').value,trend:document.getElementById('pop-trend').value});renderRows(popData,document.getElementById('pk-pop-tbody'));document.getElementById('pk-pop-panel').style.display='none';document.getElementById('pk-pop-add').textContent='+ Tambah Baris';});
-document.getElementById('pk-prod-save')?.addEventListener('click',function(){prodData.push({no:prodData.length+1,uraian:document.getElementById('prod-uraian').value,y2019:document.getElementById('prod-2019').value,y2020:document.getElementById('prod-2020').value,y2021:document.getElementById('prod-2021').value,y2022:document.getElementById('prod-2022').value,y2023:document.getElementById('prod-2023').value});renderRows(prodData,document.getElementById('pk-prod-tbody'),false);document.getElementById('pk-prod-panel').style.display='none';document.getElementById('pk-prod-add').textContent='+ Tambah Komoditas';});
-document.getElementById('pk-luas-save')?.addEventListener('click',function(){luasData.push({no:luasData.length+1,uraian:document.getElementById('luas-uraian').value,y2019:document.getElementById('luas-2019').value,y2020:document.getElementById('luas-2020').value,y2021:document.getElementById('luas-2021').value,y2022:document.getElementById('luas-2022').value,y2023:document.getElementById('luas-2023').value});renderRows(luasData,document.getElementById('pk-luas-tbody'),false);document.getElementById('pk-luas-panel').style.display='none';document.getElementById('pk-luas-add').textContent='+ Tambah Komoditas';});
-
-function enableInlineEdit(tbody,data){tbody?.addEventListener('dblclick',function(e){var td=e.target.closest('td');if(!td)return;if(!td.className.match(/^c\-/))return;var val=td.textContent;var controls='<div style="display:flex;align-items:center;gap:6px"><input class="edit-cell" value="'+val+'" style="flex:1"><button class="btn btn-primary btn-xs ok"><i class="fas fa-check"></i></button><button class="btn btn-outline btn-xs cancel"><i class="fas fa-times"></i></button></div>';td.setAttribute('data-prev',val);td.innerHTML=controls;});tbody?.addEventListener('click',function(e){var ok=e.target.closest('.ok');var cancel=e.target.closest('.cancel');if(!ok&&!cancel)return;var td=e.target.closest('td');var tr=td.closest('tr');var idx=parseInt(tr.dataset.row,10)-1;var r=data[idx];if(ok){var val=td.querySelector('input').value;var cls=td.className;switch(true){case /c-uraian/.test(cls): r.uraian=val; break;case /c-y2019/.test(cls): r.y2019=val; break;case /c-y2020/.test(cls): r.y2020=val; break;case /c-y2021/.test(cls): r.y2021=val; break;case /c-y2022/.test(cls): r.y2022=val; break;case /c-y2023/.test(cls): r.y2023=val; break;case /c-trend/.test(cls): r.trend=val; break;}td.textContent=val;}else{td.textContent=td.getAttribute('data-prev');}});}
-enableInlineEdit(document.getElementById('pk-pop-tbody'),popData);
-enableInlineEdit(document.getElementById('pk-prod-tbody'),prodData);
-enableInlineEdit(document.getElementById('pk-luas-tbody'),luasData);
-document.addEventListener('click',function(e){var ed=e.target.closest('[data-pk-ed]');var del=e.target.closest('[data-pk-del]');if(!ed&&!del)return;var p=(ed||del).getAttribute(ed?'data-pk-ed':'data-pk-del').split(':');var key=p[0],i=parseInt(p[1],10);var set=key==='pop'?popData:key==='prod'?prodData:luasData;var panelId=key==='pop'?'pk-pop-panel':key==='prod'?'pk-prod-panel':'pk-luas-panel';if(ed){var r=set[i];document.getElementById((key==='pop'?'pop':'prod')+'-uraian').value=r.uraian;document.getElementById(key+'-2019').value=r.y2019;document.getElementById(key+'-2020').value=r.y2020;document.getElementById(key+'-2021').value=r.y2021;document.getElementById(key+'-2022').value=r.y2022;document.getElementById(key+'-2023').value=r.y2023;document.getElementById(panelId).style.display='block';}else{Utils.confirm('Hapus baris ini?',{okText:'Hapus',cancelText:'Batal',variant:'danger'}).then(function(yes){if(!yes)return;set.splice(i,1);set.forEach(function(r,idx){r.no=idx+1});renderRows(set,document.getElementById('pk-'+key+'-tbody'),key==='pop',key);Utils.showToast('Baris dihapus','success');});}});
-
+function toggle(btn,panel){var open=panel.style.display!=='none';panel.style.display=open?'none':'block';btn.innerHTML=open?'<i class="fas fa-plus"></i> '+(btn.id==='pk-pop-add'?'Ajukan Baris':'Ajukan Komoditas'):'Tutup Form';}
+document.getElementById('pk-pop-add')?.addEventListener('click',function(){popEditIndex=-1;popEditId='';toggle(this,document.getElementById('pk-pop-panel'));});
+document.getElementById('pk-prod-add')?.addEventListener('click',function(){prodEditIndex=-1;prodEditId='';toggle(this,document.getElementById('pk-prod-panel'));});
+document.getElementById('pk-luas-add')?.addEventListener('click',function(){luasEditIndex=-1;luasEditId='';toggle(this,document.getElementById('pk-luas-panel'));});
+document.getElementById('pk-pop-cancel')?.addEventListener('click',function(){popEditIndex=-1;popEditId='';document.getElementById('pk-pop-panel').style.display='none';document.getElementById('pk-pop-add').textContent='+ Ajukan Baris';});
+document.getElementById('pk-prod-cancel')?.addEventListener('click',function(){prodEditIndex=-1;prodEditId='';document.getElementById('pk-prod-panel').style.display='none';document.getElementById('pk-prod-add').textContent='+ Ajukan Komoditas';});
+document.getElementById('pk-luas-cancel')?.addEventListener('click',function(){luasEditIndex=-1;luasEditId='';document.getElementById('pk-luas-panel').style.display='none';document.getElementById('pk-luas-add').textContent='+ Ajukan Komoditas';});
+async function submitDM(judul,year,key){try{var fp= key==='pop' ? 'perkebunan_pop' : (key==='prod' ? 'perkebunan_prod' : 'perkebunan_luas'); await fetch('/data-management/submit',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({opd:opdName,dinas_id:dinasId,judul_data:judul,deskripsi:null,file_path:fp,tahun_perencanaan:year})});}catch(_){}}
+document.getElementById('pk-pop-save')?.addEventListener('click',async function(){var ura=document.getElementById('pop-uraian').value.trim();if(!ura){Utils.showToast('Isi Nama Data','error');return;}var vals={y2019:document.getElementById('pop-2019').value.trim(),y2020:document.getElementById('pop-2020').value.trim(),y2021:document.getElementById('pop-2021').value.trim(),y2022:document.getElementById('pop-2022').value.trim(),y2023:document.getElementById('pop-2023').value.trim(),trend:document.getElementById('pop-trend').value.trim()};var hasVal=(vals.y2019||vals.y2020||vals.y2021||vals.y2022||vals.y2023);if(!hasVal){Utils.showToast('Isi minimal salah satu nilai tahun','error');return;}var year=(vals.y2023||'').replace(/[^0-9]/g,'').slice(0,4)||new Date().getFullYear().toString();var isUser=(window.USER_ROLE==='user');try{if(popEditId){if(!isUser){var res=await fetch('/perkebunan/pop/'+popEditId,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('pop');}}else{if(!isUser){var res=await fetch('/perkebunan/pop',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('pop');}}await submitDM(ura,year,'pop');document.getElementById('pk-pop-panel').style.display='none';document.getElementById('pk-pop-add').innerHTML='<i class=\"fas fa-plus\"></i> Ajukan Baris';popEditIndex=-1;popEditId='';Utils.showToast('Data disimpan','success');}catch(e){Utils.showToast('Gagal menyimpan','error');}});
+document.getElementById('pk-prod-save')?.addEventListener('click',async function(){var ura=document.getElementById('prod-uraian').value.trim();if(!ura){Utils.showToast('Isi Nama Data','error');return;}var vals={y2019:document.getElementById('prod-2019').value.trim(),y2020:document.getElementById('prod-2020').value.trim(),y2021:document.getElementById('prod-2021').value.trim(),y2022:document.getElementById('prod-2022').value.trim(),y2023:document.getElementById('prod-2023').value.trim()};var hasVal=(vals.y2019||vals.y2020||vals.y2021||vals.y2022||vals.y2023);if(!hasVal){Utils.showToast('Isi minimal salah satu nilai tahun','error');return;}var year=(vals.y2023||'').replace(/[^0-9]/g,'').slice(0,4)||new Date().getFullYear().toString();var isUser=(window.USER_ROLE==='user');try{if(prodEditId){if(!isUser){var res=await fetch('/perkebunan/prod/'+prodEditId,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('prod');}}else{if(!isUser){var res=await fetch('/perkebunan/prod',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('prod');}}await submitDM(ura,year,'prod');document.getElementById('pk-prod-panel').style.display='none';document.getElementById('pk-prod-add').innerHTML='<i class=\"fas fa-plus\"></i> Ajukan Komoditas';prodEditIndex=-1;prodEditId='';Utils.showToast('Data disimpan','success');}catch(e){Utils.showToast('Gagal menyimpan','error');}});
+document.getElementById('pk-luas-save')?.addEventListener('click',async function(){var ura=document.getElementById('luas-uraian').value.trim();if(!ura){Utils.showToast('Isi Nama Data','error');return;}var vals={y2019:document.getElementById('luas-2019').value.trim(),y2020:document.getElementById('luas-2020').value.trim(),y2021:document.getElementById('luas-2021').value.trim(),y2022:document.getElementById('luas-2022').value.trim(),y2023:document.getElementById('luas-2023').value.trim()};var hasVal=(vals.y2019||vals.y2020||vals.y2021||vals.y2022||vals.y2023);if(!hasVal){Utils.showToast('Isi minimal salah satu nilai tahun','error');return;}var year=(vals.y2023||'').replace(/[^0-9]/g,'').slice(0,4)||new Date().getFullYear().toString();var isUser=(window.USER_ROLE==='user');try{if(luasEditId){if(!isUser){var res=await fetch('/perkebunan/luas/'+luasEditId',{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('luas');}}else{if(!isUser){var res=await fetch('/perkebunan/luas',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({uraian:ura,values:vals})});if(!res.ok){Utils.showToast('Gagal menyimpan','error');return;}await fetchRows('luas');}}await submitDM(ura,year,'luas');document.getElementById('pk-luas-panel').style.display='none';document.getElementById('pk-luas-add').innerHTML='<i class=\"fas fa-plus\"></i> Ajukan Komoditas';luasEditIndex=-1;luasEditId='';Utils.showToast('Data disimpan','success');}catch(e){Utils.showToast('Gagal menyimpan','error');}});
+var popEditIndex=-1,prodEditIndex=-1,luasEditIndex=-1;var popEditId='',prodEditId='',luasEditId='';
+function enableInlineEdit(tbody,data,key){tbody?.addEventListener('dblclick',function(e){var td=e.target.closest('td');if(!td)return;if(!td.className.match(/^c\-/))return;var val=td.textContent;var controls='<div style="display:flex;align-items:center;gap:6px"><input class="edit-cell" value="'+val+'" style="flex:1"><button class="btn btn-primary btn-xs ok"><i class="fas fa-check"></i></button><button class="btn btn-outline btn-xs cancel"><i class="fas fa-times"></i></button></div>';td.setAttribute('data-prev',val);td.innerHTML=controls;});tbody?.addEventListener('click',function(e){var ok=e.target.closest('.ok');var cancel=e.target.closest('.cancel');if(!ok&&!cancel)return;var td=e.target.closest('td');var tr=td.closest('tr');var idx=parseInt(tr.dataset.row,10)-1;var r=data[idx];if(ok){var val=td.querySelector('input').value;var cls=td.className;switch(true){case /c-uraian/.test(cls): r.uraian=val; break;case /c-y2019/.test(cls): r.y2019=val; break;case /c-y2020/.test(cls): r.y2020=val; break;case /c-y2021/.test(cls): r.y2021=val; break;case /c-y2022/.test(cls): r.y2022=val; break;case /c-y2023/.test(cls): r.y2023=val; break;case /c-trend/.test(cls): r.trend=val; break;}td.textContent=val;var isUser=(window.USER_ROLE==='user');if(isUser){Utils.showToast('Hanya admin yang bisa mengubah','error');td.textContent=td.getAttribute('data-prev');return;}var id=r.id;var payload={uraian:r.uraian,values:{y2019:r.y2019,y2020:r.y2020,y2021:r.y2021,y2022:r.y2022,y2023:r.y2023}};if(key==='pop'){payload.values.trend=r.trend||''}var url = key==='pop'?('/perkebunan/pop/'+id):(key==='prod'?('/perkebunan/prod/'+id):('/perkebunan/luas/'+id));fetch(url,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify(payload)}).then(async function(res){if(res.ok){await fetchRows(key);Utils.showToast('Data diperbarui','success');}else{Utils.showToast('Gagal menyimpan','error');}}).catch(function(){Utils.showToast('Gagal menyimpan','error');});}else{td.textContent=td.getAttribute('data-prev');}})}
+enableInlineEdit(document.getElementById('pk-pop-tbody'),popRows,'pop');
+enableInlineEdit(document.getElementById('pk-prod-tbody'),prodRows,'prod');
+enableInlineEdit(document.getElementById('pk-luas-tbody'),luasRows,'luas');
+document.addEventListener('click',function(e){
+  var ed=e.target.closest('[data-pk-ed]');
+  var del=e.target.closest('[data-pk-del]');
+  if(!ed&&!del)return;
+  var p=(ed||del).getAttribute(ed?'data-pk-ed':'data-pk-del').split(':');
+  var key=p[0],i=parseInt(p[1],10);
+  var set=key==='pop'?popRows:key==='prod'?prodRows:luasRows;
+  var panelId=key==='pop'?'pk-pop-panel':key==='prod'?'pk-prod-panel':'pk-luas-panel';
+  if(ed){
+    var r=set[i];
+    if(key==='pop'){
+      popEditIndex=i;popEditId=r.id;
+      document.getElementById('pop-uraian').value=r.uraian;
+      document.getElementById('pop-2019').value=r.y2019;
+      document.getElementById('pop-2020').value=r.y2020;
+      document.getElementById('pop-2021').value=r.y2021;
+      document.getElementById('pop-2022').value=r.y2022;
+      document.getElementById('pop-2023').value=r.y2023;
+      document.getElementById('pop-trend').value=r.trend||'';
+    }else if(key==='prod'){
+      prodEditIndex=i;prodEditId=r.id;
+      document.getElementById('prod-uraian').value=r.uraian;
+      document.getElementById('prod-2019').value=r.y2019;
+      document.getElementById('prod-2020').value=r.y2020;
+      document.getElementById('prod-2021').value=r.y2021;
+      document.getElementById('prod-2022').value=r.y2022;
+      document.getElementById('prod-2023').value=r.y2023;
+    }else{
+      luasEditIndex=i;luasEditId=r.id;
+      document.getElementById('luas-uraian').value=r.uraian;
+      document.getElementById('luas-2019').value=r.y2019;
+      document.getElementById('luas-2020').value=r.y2020;
+      document.getElementById('luas-2021').value=r.y2021;
+      document.getElementById('luas-2022').value=r.y2022;
+      document.getElementById('luas-2023').value=r.y2023;
+    }
+    document.getElementById(panelId).style.display='block';
+  }else{
+    var id=set[i]?.id;
+    Utils.confirm('Hapus baris ini?',{okText:'Hapus',cancelText:'Batal',variant:'danger'}).then(async function(yes){
+      if(!yes)return;
+      try{
+        var url = key==='pop'?('/perkebunan/pop/'+id):(key==='prod'?('/perkebunan/prod/'+id):('/perkebunan/luas/'+id));
+        var res=await fetch(url,{method:'DELETE',headers:{'X-CSRF-TOKEN':csrfToken}});
+        if(res.ok){
+          await fetchRows(key);
+          Utils.showToast('Baris dihapus','success');
+        }else{
+          Utils.showToast('Gagal menghapus','error');
+        }
+      }catch(e){
+        Utils.showToast('Gagal menghapus','error');
+      }
+    });
+  }
+});
 function exportCsv(filename, headers, rows){var csv=[headers].concat(rows).map(function(row){return row.map(function(v){var s=(''+(v==null?'':v)).replace(/"/g,'""');return '"'+s+'"';}).join(',');}).join('\n');var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);} 
-document.getElementById('pk-pop-export')?.addEventListener('click',function(){var headers=["No","Uraian","2019","2020","2021","2022","2023","Trend (%)"];var rows=popData.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023,r.trend];});exportCsv('perkebunan-populasi.csv',headers,rows);});
-document.getElementById('pk-prod-export')?.addEventListener('click',function(){var headers=["No","Komoditas","2019","2020","2021","2022","2023"];var rows=prodData.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023];});exportCsv('perkebunan-produksi.csv',headers,rows);});
-document.getElementById('pk-luas-export')?.addEventListener('click',function(){var headers=["No","Komoditas","2019","2020","2021","2022","2023"];var rows=luasData.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023];});exportCsv('perkebunan-luas.csv',headers,rows);});
+document.getElementById('pk-pop-export')?.addEventListener('click',function(){var headers=["No","Uraian","2019","2020","2021","2022","2023","Trend (%)"];var rows=popRows.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023,r.trend];});exportCsv('perkebunan-populasi.csv',headers,rows);});
+document.getElementById('pk-prod-export')?.addEventListener('click',function(){var headers=["No","Komoditas","2019","2020","2021","2022","2023"];var rows=prodRows.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023];});exportCsv('perkebunan-produksi.csv',headers,rows);});
+document.getElementById('pk-luas-export')?.addEventListener('click',function(){var headers=["No","Komoditas","2019","2020","2021","2022","2023"];var rows=luasRows.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023];});exportCsv('perkebunan-luas.csv',headers,rows);});
 </script>
 @endpush

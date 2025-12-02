@@ -4,26 +4,37 @@ namespace Database\Seeders;
 
 use App\Models\Dinas;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DinasSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        $dinas = [
-            ['nama_dinas' => 'DPMPTSP', 'kode_dinas' => 'DPM-PTSP'],
-            ['nama_dinas' => 'Perdagangan', 'kode_dinas' => 'DAGANG'],
-            ['nama_dinas' => 'Perindustrian', 'kode_dinas' => 'INDUSTRI'],
-            ['nama_dinas' => 'Koperasi', 'kode_dinas' => 'KOPERASI'],
-            ['nama_dinas' => 'Tanaman Pangan', 'kode_dinas' => 'TANPANG'],
-            ['nama_dinas' => 'Perkebunan', 'kode_dinas' => 'KEBUN'],
-            ['nama_dinas' => 'Perikanan', 'kode_dinas' => 'PERIKANAN'],
-            ['nama_dinas' => 'Ketahanan Pangan', 'kode_dinas' => 'KETAPANG'],
-            ['nama_dinas' => 'Pariwisata', 'kode_dinas' => 'PARIWISATA'],
-            ['nama_dinas' => 'DLH', 'kode_dinas' => 'DLH'],
+        $daftarDinas = [
+            'Bappeda',
+            'DPMPTSP',
+            'Dinas Perdagangan',
+            'Dinas Perindustrian',
+            'Dinas Koperasi dan UKM',
+            'Dinas Pertanian Tanaman Pangan',
+            'Dinas Perkebunan dan Peternakan',
+            'Dinas Perikanan',
+            'Dinas Ketahanan Pangan',
+            'Dinas Pariwisata',
+            'Dinas Lingkungan Hidup',
+            'Badan Pendapatan Daerah',
         ];
 
-        foreach ($dinas as $data) {
-            Dinas::create($data);
+        foreach ($daftarDinas as $nama) {
+            $slug = Str::slug($nama);
+            Dinas::firstOrCreate([
+                'kode_dinas' => $slug,
+            ], [
+                'nama_dinas' => $nama,
+                'kepala_dinas' => 'Kepala ' . $nama,
+                'alamat' => 'Komplek Perkantoran Pemda Kolaka Utara',
+                'jumlah_target_data' => rand(10, 50),
+            ]);
         }
     }
 }

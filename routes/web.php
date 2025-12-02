@@ -3,8 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataManagementController;
-use App\Http\Controllers\DinasController; // TAMBAHKAN INI
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as VerifyCsrfToken;
 
 // Public landing page (Index). Akses aplikasi lewat tombol "Masuk".
 Route::get('/', function () {
@@ -12,48 +12,143 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->withoutMiddleware([VerifyCsrfToken::class]);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected routes - require authentication
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Data Management CRUD Routes
-    Route::prefix('data-management')->group(function () {
-        Route::get('/', [DataManagementController::class, 'index'])->name('datamanagement');
-        Route::get('/create', [DataManagementController::class, 'create'])->name('datamanagement.create');
-        Route::post('/', [DataManagementController::class, 'store'])->name('datamanagement.store');
-        Route::get('/{dataSubmission}/edit', [DataManagementController::class, 'edit'])->name('datamanagement.edit');
-        Route::put('/{dataSubmission}', [DataManagementController::class, 'update'])->name('datamanagement.update');
-        Route::delete('/{dataSubmission}', [DataManagementController::class, 'destroy'])->name('datamanagement.destroy');
-        
-        // Approval routes
-        Route::post('/{dataSubmission}/approve', [DataManagementController::class, 'approve'])->name('datamanagement.approve');
-        Route::post('/{dataSubmission}/reject', [DataManagementController::class, 'reject'])->name('datamanagement.reject');
-    });
-
+    Route::get('/data-management', [DataManagementController::class, 'index'])->name('datamanagement');
+    Route::post('/data-management/submit', [DataManagementController::class, 'store'])->name('datamanagement.submit');
+    Route::post('/data-management/submissions/{submission}/approve', [DataManagementController::class, 'approve'])->name('datamanagement.approve');
+    Route::post('/data-management/submissions/{submission}/reject', [DataManagementController::class, 'reject'])->name('datamanagement.reject');
+    Route::get('/data-management/records', [DataManagementController::class, 'records'])->name('datamanagement.records');
+    Route::post('/data-management/records', [DataManagementController::class, 'storeRecord'])->name('datamanagement.records.store');
+    Route::put('/data-management/records/{record}', [DataManagementController::class, 'updateRecord'])->name('datamanagement.records.update');
+    Route::delete('/data-management/records/{record}', [DataManagementController::class, 'destroyRecord'])->name('datamanagement.records.destroy');
+    Route::get('/opd/rows', [DataManagementController::class, 'opdRows'])->name('opd.rows');
+    Route::post('/opd/rows', [DataManagementController::class, 'opdStoreRow'])->name('opd.rows.store');
+    Route::put('/opd/rows/{row}', [DataManagementController::class, 'opdUpdateRow'])->name('opd.rows.update');
+    Route::delete('/opd/rows/{row}', [DataManagementController::class, 'opdDestroyRow'])->name('opd.rows.destroy');
+    Route::get('/dinas/dlh/rows', [DataManagementController::class, 'dlhRows']);
+    Route::post('/dinas/dlh/rows', [DataManagementController::class, 'dlhStoreRow']);
+    Route::put('/dinas/dlh/rows/{row}', [DataManagementController::class, 'dlhUpdateRow']);
+    Route::delete('/dinas/dlh/rows/{row}', [DataManagementController::class, 'dlhDestroyRow']);
+    Route::get('/ketahanan-pangan/rows', [DataManagementController::class, 'ketapangRows']);
+    Route::post('/ketahanan-pangan/rows', [DataManagementController::class, 'ketapangStoreRow']);
+    Route::put('/ketahanan-pangan/rows/{row}', [DataManagementController::class, 'ketapangUpdateRow']);
+    Route::delete('/ketahanan-pangan/rows/{row}', [DataManagementController::class, 'ketapangDestroyRow']);
+    Route::get('/perikanan/inf', [DataManagementController::class, 'perikananInfRows']);
+    Route::post('/perikanan/inf', [DataManagementController::class, 'perikananInfStoreRow']);
+    Route::put('/perikanan/inf/{row}', [DataManagementController::class, 'perikananInfUpdateRow']);
+    Route::delete('/perikanan/inf/{row}', [DataManagementController::class, 'perikananInfDestroyRow']);
+    Route::get('/perikanan/alt', [DataManagementController::class, 'perikananAltRows']);
+    Route::post('/perikanan/alt', [DataManagementController::class, 'perikananAltStoreRow']);
+    Route::put('/perikanan/alt/{row}', [DataManagementController::class, 'perikananAltUpdateRow']);
+    Route::delete('/perikanan/alt/{row}', [DataManagementController::class, 'perikananAltDestroyRow']);
+    Route::get('/perikanan/bud', [DataManagementController::class, 'perikananBudRows']);
+    Route::post('/perikanan/bud', [DataManagementController::class, 'perikananBudStoreRow']);
+    Route::put('/perikanan/bud/{row}', [DataManagementController::class, 'perikananBudUpdateRow']);
+    Route::delete('/perikanan/bud/{row}', [DataManagementController::class, 'perikananBudDestroyRow']);
+    Route::get('/perikanan/pro', [DataManagementController::class, 'perikananProRows']);
+    Route::post('/perikanan/pro', [DataManagementController::class, 'perikananProStoreRow']);
+    Route::put('/perikanan/pro/{row}', [DataManagementController::class, 'perikananProUpdateRow']);
+    Route::delete('/perikanan/pro/{row}', [DataManagementController::class, 'perikananProDestroyRow']);
+    Route::get('/perikanan/bin', [DataManagementController::class, 'perikananBinRows']);
+    Route::post('/perikanan/bin', [DataManagementController::class, 'perikananBinStoreRow']);
+    Route::put('/perikanan/bin/{row}', [DataManagementController::class, 'perikananBinUpdateRow']);
+    Route::delete('/perikanan/bin/{row}', [DataManagementController::class, 'perikananBinDestroyRow']);
+    Route::get('/pariwisata/ako', [DataManagementController::class, 'pariwisataAkoRows']);
+    Route::post('/pariwisata/ako', [DataManagementController::class, 'pariwisataAkoStoreRow']);
+    Route::put('/pariwisata/ako/{row}', [DataManagementController::class, 'pariwisataAkoUpdateRow']);
+    Route::delete('/pariwisata/ako/{row}', [DataManagementController::class, 'pariwisataAkoDestroyRow']);
+    Route::get('/pariwisata/wis', [DataManagementController::class, 'pariwisataWisRows']);
+    Route::post('/pariwisata/wis', [DataManagementController::class, 'pariwisataWisStoreRow']);
+    Route::put('/pariwisata/wis/{row}', [DataManagementController::class, 'pariwisataWisUpdateRow']);
+    Route::delete('/pariwisata/wis/{row}', [DataManagementController::class, 'pariwisataWisDestroyRow']);
+    Route::get('/pariwisata/jen', [DataManagementController::class, 'pariwisataJenRows']);
+    Route::post('/pariwisata/jen', [DataManagementController::class, 'pariwisataJenStoreRow']);
+    Route::put('/pariwisata/jen/{row}', [DataManagementController::class, 'pariwisataJenUpdateRow']);
+    Route::delete('/pariwisata/jen/{row}', [DataManagementController::class, 'pariwisataJenDestroyRow']);
+    Route::get('/pariwisata/kec', [DataManagementController::class, 'pariwisataKecRows']);
+    Route::post('/pariwisata/kec', [DataManagementController::class, 'pariwisataKecStoreRow']);
+    Route::put('/pariwisata/kec/{row}', [DataManagementController::class, 'pariwisataKecUpdateRow']);
+    Route::delete('/pariwisata/kec/{row}', [DataManagementController::class, 'pariwisataKecDestroyRow']);
+    Route::get('/pariwisata/pem', [DataManagementController::class, 'pariwisataPemRows']);
+    Route::post('/pariwisata/pem', [DataManagementController::class, 'pariwisataPemStoreRow']);
+    Route::put('/pariwisata/pem/{row}', [DataManagementController::class, 'pariwisataPemUpdateRow']);
+    Route::delete('/pariwisata/pem/{row}', [DataManagementController::class, 'pariwisataPemDestroyRow']);
+    Route::get('/perdagangan/pdrb', [DataManagementController::class, 'perdaganganPdrbRows']);
+    Route::post('/perdagangan/pdrb', [DataManagementController::class, 'perdaganganPdrbStoreRow']);
+    Route::put('/perdagangan/pdrb/{row}', [DataManagementController::class, 'perdaganganPdrbUpdateRow']);
+    Route::delete('/perdagangan/pdrb/{row}', [DataManagementController::class, 'perdaganganPdrbDestroyRow']);
+    Route::get('/perdagangan/eks', [DataManagementController::class, 'perdaganganEksRows']);
+    Route::post('/perdagangan/eks', [DataManagementController::class, 'perdaganganEksStoreRow']);
+    Route::put('/perdagangan/eks/{row}', [DataManagementController::class, 'perdaganganEksUpdateRow']);
+    Route::delete('/perdagangan/eks/{row}', [DataManagementController::class, 'perdaganganEksDestroyRow']);
+    Route::get('/koperasi/rows', [DataManagementController::class, 'koperasiRows']);
+    Route::post('/koperasi/rows', [DataManagementController::class, 'koperasiStoreRow']);
+    Route::put('/koperasi/rows/{row}', [DataManagementController::class, 'koperasiUpdateRow']);
+    Route::delete('/koperasi/rows/{row}', [DataManagementController::class, 'koperasiDestroyRow']);
+    Route::get('/dpmptsp/rows', [DataManagementController::class, 'dpmptspRows']);
+    Route::post('/dpmptsp/rows', [DataManagementController::class, 'dpmptspStoreRow']);
+    Route::put('/dpmptsp/rows/{row}', [DataManagementController::class, 'dpmptspUpdateRow']);
+    Route::delete('/dpmptsp/rows/{row}', [DataManagementController::class, 'dpmptspDestroyRow']);
+    Route::get('/perindustrian/hb', [DataManagementController::class, 'perindustrianHbRows']);
+    Route::post('/perindustrian/hb', [DataManagementController::class, 'perindustrianHbStoreRow']);
+    Route::put('/perindustrian/hb/{row}', [DataManagementController::class, 'perindustrianHbUpdateRow']);
+    Route::delete('/perindustrian/hb/{row}', [DataManagementController::class, 'perindustrianHbDestroyRow']);
+    Route::get('/perindustrian/hk', [DataManagementController::class, 'perindustrianHkRows']);
+    Route::post('/perindustrian/hk', [DataManagementController::class, 'perindustrianHkStoreRow']);
+    Route::put('/perindustrian/hk/{row}', [DataManagementController::class, 'perindustrianHkUpdateRow']);
+    Route::delete('/perindustrian/hk/{row}', [DataManagementController::class, 'perindustrianHkDestroyRow']);
+    Route::get('/perindustrian/gr', [DataManagementController::class, 'perindustrianGrRows']);
+    Route::post('/perindustrian/gr', [DataManagementController::class, 'perindustrianGrStoreRow']);
+    Route::put('/perindustrian/gr/{row}', [DataManagementController::class, 'perindustrianGrUpdateRow']);
+    Route::delete('/perindustrian/gr/{row}', [DataManagementController::class, 'perindustrianGrDestroyRow']);
+    Route::get('/tanaman-pangan/sayur', [DataManagementController::class, 'tanamanSayurRows']);
+    Route::post('/tanaman-pangan/sayur', [DataManagementController::class, 'tanamanSayurStoreRow']);
+    Route::put('/tanaman-pangan/sayur/{row}', [DataManagementController::class, 'tanamanSayurUpdateRow']);
+    Route::delete('/tanaman-pangan/sayur/{row}', [DataManagementController::class, 'tanamanSayurDestroyRow']);
+    Route::get('/tanaman-pangan/pangan', [DataManagementController::class, 'tanamanPanganRows']);
+    Route::post('/tanaman-pangan/pangan', [DataManagementController::class, 'tanamanPanganStoreRow']);
+    Route::put('/tanaman-pangan/pangan/{row}', [DataManagementController::class, 'tanamanPanganUpdateRow']);
+    Route::delete('/tanaman-pangan/pangan/{row}', [DataManagementController::class, 'tanamanPanganDestroyRow']);
+    Route::get('/dinas/dlh/rows', [DataManagementController::class, 'dlhRows'])->name('dinas.dlh.rows');
+    Route::post('/dinas/dlh/rows', [DataManagementController::class, 'dlhStoreRow'])->name('dinas.dlh.rows.store');
+    Route::put('/dinas/dlh/rows/{row}', [DataManagementController::class, 'dlhUpdateRow'])->name('dinas.dlh.rows.update');
+    Route::delete('/dinas/dlh/rows/{row}', [DataManagementController::class, 'dlhDestroyRow'])->name('dinas.dlh.rows.destroy');
     Route::get('/reports', [DashboardController::class, 'reports'])->name('reports');
     Route::get('/calendar', [DashboardController::class, 'calendar'])->name('calendar');
     Route::get('/forum', [DashboardController::class, 'forum'])->name('forum');
     Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
     Route::get('/dinas-status', [DashboardController::class, 'dinasStatus'])->name('dinas-status');
-    
-    // DINAS DYNAMIC ROUTES - UPDATE INI
-    Route::prefix('dinas')->group(function () {
-        // Dynamic route - HARUS DIATAS STATIC ROUTES
-        Route::get('/{id}', [DinasController::class, 'show'])->name('dinas.show');
-        
-        // Keep static routes for backward compatibility
-        Route::view('/dpmptsp', 'dinas.dpmptsp')->name('dinas.dpmptsp.old');
-        Route::view('/perdagangan', 'dinas.perdagangan')->name('dinas.perdagangan.old');
-        Route::view('/perindustrian', 'dinas.perindustrian')->name('dinas.perindustrian.old');
-        Route::view('/koperasi', 'dinas.koperasi')->name('dinas.koperasi.old');
-        Route::view('/tanaman-pangan', 'dinas.tanaman-pangan')->name('dinas.tanaman-pangan.old');
-        Route::view('/perkebunan', 'dinas.perkebunan')->name('dinas.perkebunan.old');
-        Route::view('/ketapang', 'dinas.ketapang')->name('dinas.ketapang.old');
-        Route::view('/pariwisata', 'dinas.pariwisata')->name('dinas.pariwisata.old');
-        Route::view('/dlh', 'dinas.dlh')->name('dinas.dlh.old');
-        Route::view('/perikanan', 'dinas.perikanan')->name('dinas.perikanan.old');
+    // Dinas pages must be authenticated
+    Route::prefix('dinas')->middleware(\App\Http\Middleware\EnsureDinasAccess::class)->group(function () {
+        Route::view('/dpmptsp', 'dinas.dpmptsp')->name('dinas.dpmptsp');
+        Route::view('/perdagangan', 'dinas.perdagangan')->name('dinas.perdagangan');
+        Route::view('/perindustrian', 'dinas.perindustrian')->name('dinas.perindustrian');
+        Route::view('/koperasi', 'dinas.koperasi')->name('dinas.koperasi');
+        Route::view('/tanaman-pangan', 'dinas.tanaman-pangan')->name('dinas.tanaman-pangan');
+        Route::view('/perkebunan', 'dinas.perkebunan')->name('dinas.perkebunan');
+        Route::view('/ketapang', 'dinas.ketapang')->name('dinas.ketapang');
+        Route::view('/pariwisata', 'dinas.pariwisata')->name('dinas.pariwisata');
+        Route::view('/dlh', 'dinas.dlh')->name('dinas.dlh');
+        Route::view('/perikanan', 'dinas.perikanan')->name('dinas.perikanan');
+        Route::view('/bapenda', 'dinas.bapenda')->name('dinas.bapenda');
     });
 });
+
+// Removed legacy FE dashboard route to avoid duplication
+    Route::get('/perkebunan/pop', [DataManagementController::class, 'perkebunanPopRows']);
+    Route::post('/perkebunan/pop', [DataManagementController::class, 'perkebunanPopStoreRow']);
+    Route::put('/perkebunan/pop/{row}', [DataManagementController::class, 'perkebunanPopUpdateRow']);
+    Route::delete('/perkebunan/pop/{row}', [DataManagementController::class, 'perkebunanPopDestroyRow']);
+    Route::get('/perkebunan/prod', [DataManagementController::class, 'perkebunanProdRows']);
+    Route::post('/perkebunan/prod', [DataManagementController::class, 'perkebunanProdStoreRow']);
+    Route::put('/perkebunan/prod/{row}', [DataManagementController::class, 'perkebunanProdUpdateRow']);
+    Route::delete('/perkebunan/prod/{row}', [DataManagementController::class, 'perkebunanProdDestroyRow']);
+    Route::get('/perkebunan/luas', [DataManagementController::class, 'perkebunanLuasRows']);
+    Route::post('/perkebunan/luas', [DataManagementController::class, 'perkebunanLuasStoreRow']);
+    Route::put('/perkebunan/luas/{row}', [DataManagementController::class, 'perkebunanLuasUpdateRow']);
+    Route::delete('/perkebunan/luas/{row}', [DataManagementController::class, 'perkebunanLuasDestroyRow']);
