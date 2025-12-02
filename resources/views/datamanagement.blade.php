@@ -7,10 +7,10 @@
     <div class="page active" id="data-management-page">
       <div class="page-header"><h1>Data Management</h1><p>Kelola data perencanaan dari semua dinas - RKPD 2025</p></div>
       <div class="kpi-grid">
-        <div class="kpi-card" id="kpi-total"><div class="kpi-icon"><i class="fas fa-database"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Total Data</div></div><div class="kpi-delta" id="kpi-total-delta">+0</div></div>
-        <div class="kpi-card" id="kpi-complete"><div class="kpi-icon"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Complete</div></div><div class="kpi-delta" id="kpi-complete-delta">+0</div></div>
-        <div class="kpi-card" id="kpi-progress"><div class="kpi-icon"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">In Progress</div></div><div class="kpi-delta" id="kpi-progress-delta">+0</div></div>
-        <div class="kpi-card" id="kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Pending Review</div></div><div class="kpi-delta" id="kpi-pending-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-total"><div class="kpi-icon"><i class="fas fa-database"></i></div><div class="kpi-content"><div class="kpi-value">{{ $totalSubmissions ?? 0 }}</div><div class="kpi-label">Total Data</div></div><div class="kpi-delta" id="kpi-total-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-complete"><div class="kpi-icon"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><div class="kpi-value">{{ $completeSubmissions ?? 0 }}</div><div class="kpi-label">Complete</div></div><div class="kpi-delta" id="kpi-complete-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-progress"><div class="kpi-icon"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><div class="kpi-value">{{ $inProgressSubmissions ?? 0 }}</div><div class="kpi-label">In Progress</div></div><div class="kpi-delta" id="kpi-progress-delta">+0</div></div>
+        <div class="kpi-card" id="kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">{{ $pendingReviews ?? 0 }}</div><div class="kpi-label">Pending Review</div></div><div class="kpi-delta" id="kpi-pending-delta">+0</div></div>
       </div>
 
       @php($role = auth()->user()->role ?? null)

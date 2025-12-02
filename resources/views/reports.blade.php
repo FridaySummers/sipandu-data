@@ -7,10 +7,10 @@
         <div class="page-header"><h1>Laporan & Analisis</h1><p>Visualisasi dan analisis data perencanaan</p></div>
 
         <div class="kpi-grid">
-            <div class="kpi-card"><div class="kpi-icon"><i class="fas fa-file-alt"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-total">0</div><div class="kpi-label">Total Laporan</div></div><div class="kpi-delta" id="rep-kpi-total-delta">+0</div></div>
-            <div class="kpi-card"><div class="kpi-icon success"><i class="fas fa-chart-line"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-avg">0%</div><div class="kpi-label">Avg. Completion</div></div><div class="kpi-delta" id="rep-kpi-avg-delta">+0</div></div>
-            <div class="kpi-card"><div class="kpi-icon info"><i class="fas fa-database"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-points">0</div><div class="kpi-label">Data Points</div></div><div class="kpi-delta" id="rep-kpi-points-delta">+0</div></div>
-            <div class="kpi-card"><div class="kpi-icon warning"><i class="fas fa-list"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-active">0</div><div class="kpi-label">Active Reports</div></div><div class="kpi-delta" id="rep-kpi-active-delta">+0</div></div>
+            <div class="kpi-card"><div class="kpi-icon"><i class="fas fa-file-alt"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-total">{{ $totalReports ?? 0 }}</div><div class="kpi-label">Total Laporan</div></div><div class="kpi-delta" id="rep-kpi-total-delta">+0</div></div>
+            <div class="kpi-card"><div class="kpi-icon success"><i class="fas fa-chart-line"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-avg">{{ $averageCompletion ?? '0%' }}</div><div class="kpi-label">Avg. Completion</div></div><div class="kpi-delta" id="rep-kpi-avg-delta">+0</div></div>
+            <div class="kpi-card"><div class="kpi-icon info"><i class="fas fa-database"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-points">{{ $dataPoints ?? 0 }}</div><div class="kpi-label">Data Points</div></div><div class="kpi-delta" id="rep-kpi-points-delta">+0</div></div>
+            <div class="kpi-card"><div class="kpi-icon warning"><i class="fas fa-list"></i></div><div class="kpi-content"><div class="kpi-value" id="rep-kpi-active">{{ $activeReports ?? 0 }}</div><div class="kpi-label">Active Reports</div></div><div class="kpi-delta" id="rep-kpi-active-delta">+0</div></div>
         </div>
 
         <div class="toolbar">
@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
   UIComponents.renderNotifications();
 
   const opdFilter = document.getElementById('rep-opd-filter');
+  // Pass PHP data to JavaScript
+  window.dinasData = @json($dinasData);
+
   const fillOPD = () => {
     if (!opdFilter) return;
     const src = (typeof window!== 'undefined' && window.dinasData) ? window.dinasData : (typeof dinasData !== 'undefined' ? dinasData : []);
@@ -83,13 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // run after DOM and enhancement
   setTimeout(fillOPD, 0);
 
-  const setKPI = () => {
-    document.getElementById('rep-kpi-total').textContent = '156';
-    document.getElementById('rep-kpi-avg').textContent = '87%';
-    document.getElementById('rep-kpi-points').textContent = '12.5K';
-    document.getElementById('rep-kpi-active').textContent = '24';
-  };
-  setKPI();
+  // The PHP variables will directly populate the KPI values, so no need to set them here
 
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const mCanvas = document.getElementById('rep-monthly-chart');

@@ -34,6 +34,13 @@ class DataManagementController extends Controller
         if (Auth::user() && Auth::user()->role === 'user') {
             return redirect()->route('dashboard');
         }
+
+        // Get submission statistics
+        $totalSubmissions = DataSubmission::count();
+        $completeSubmissions = DataSubmission::where('status', 'approved')->count();
+        $inProgressSubmissions = DataSubmission::where('status', 'in_review')->count();
+        $pendingReviews = DataSubmission::where('status', 'pending')->count();
+
         $submissions = class_exists(DataSubmission::class) ? DataSubmission::paginate(15) : null;
         $pending = null;
         if (class_exists(DataSubmission::class)) {
@@ -49,7 +56,16 @@ class DataManagementController extends Controller
         if (class_exists(DmRecord::class)) {
             $approvedRecords = DmRecord::with('dinas')->orderBy('created_at','desc')->limit(100)->get();
         }
-        return view('datamanagement', ['submissions' => $submissions, 'pendingSubmissions' => $pending, 'approvedRecords' => $approvedRecords]);
+
+        return view('datamanagement', [
+            'submissions' => $submissions,
+            'pendingSubmissions' => $pending,
+            'approvedRecords' => $approvedRecords,
+            'totalSubmissions' => $totalSubmissions,
+            'completeSubmissions' => $completeSubmissions,
+            'inProgressSubmissions' => $inProgressSubmissions,
+            'pendingReviews' => $pendingReviews
+        ]);
     }
 
     public function store(Request $request)
@@ -259,27 +275,27 @@ class DataManagementController extends Controller
                         \App\Models\KetahananPanganRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
                 }
-                if (stripos($fp, 'pariwisata_akomodasi') !== false && class_exists(\App\Models\PariwisataAkomodasiRow::class)) {
+                if (stripos($fp, 'pariwisata_ako') !== false && class_exists(\App\Models\PariwisataAkomodasiRow::class)) {
                     if (!\App\Models\PariwisataAkomodasiRow::where('dinas_id', $submission->dinas_id)->where('uraian', $submission->judul_data)->exists()) {
                         \App\Models\PariwisataAkomodasiRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
                 }
-                if (stripos($fp, 'pariwisata_wisatawan') !== false && class_exists(\App\Models\PariwisataWisatawanRow::class)) {
+                if (stripos($fp, 'pariwisata_wis') !== false && class_exists(\App\Models\PariwisataWisatawanRow::class)) {
                     if (!\App\Models\PariwisataWisatawanRow::where('dinas_id', $submission->dinas_id)->where('uraian', $submission->judul_data)->exists()) {
                         \App\Models\PariwisataWisatawanRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
                 }
-                if (stripos($fp, 'pariwisata_jenis') !== false && class_exists(\App\Models\PariwisataObjekJenisRow::class)) {
+                if (stripos($fp, 'pariwisata_jen') !== false && class_exists(\App\Models\PariwisataObjekJenisRow::class)) {
                     if (!\App\Models\PariwisataObjekJenisRow::where('dinas_id', $submission->dinas_id)->where('uraian', $submission->judul_data)->exists()) {
                         \App\Models\PariwisataObjekJenisRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
                 }
-                if (stripos($fp, 'pariwisata_kecamatan') !== false && class_exists(\App\Models\PariwisataObjekKecamatanRow::class)) {
+                if (stripos($fp, 'pariwisata_kec') !== false && class_exists(\App\Models\PariwisataObjekKecamatanRow::class)) {
                     if (!\App\Models\PariwisataObjekKecamatanRow::where('dinas_id', $submission->dinas_id)->where('uraian', $submission->judul_data)->exists()) {
                         \App\Models\PariwisataObjekKecamatanRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
                 }
-                if (stripos($fp, 'pariwisata_pemandu') !== false && class_exists(\App\Models\PariwisataPemanduRow::class)) {
+                if (stripos($fp, 'pariwisata_pem') !== false && class_exists(\App\Models\PariwisataPemanduRow::class)) {
                     if (!\App\Models\PariwisataPemanduRow::where('dinas_id', $submission->dinas_id)->where('uraian', $submission->judul_data)->exists()) {
                         \App\Models\PariwisataPemanduRow::create(['dinas_id'=>$submission->dinas_id,'uraian'=>$submission->judul_data,'values'=>[]]);
                     }
@@ -294,6 +310,33 @@ class DataManagementController extends Controller
         return redirect()->route('datamanagement')->with('success', 'Pengajuan disetujui');
     }
 
+
+    public function reject(Request $request, DataSubmission $submission)
+    {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        if (!$u) { return redirect()->route('login'); }
+        if ($u->role === 'admin_dinas' && $u->dinas_id && $submission->dinas_id !== $u->dinas_id) {
+            return redirect()->route('datamanagement')->with('error', 'Tidak berhak menolak');
+        }
+        $submission->status = 'rejected';
+        $submission->catatan_revisi = $request->input('catatan_revisi');
+        $submission->save();
+        if (class_exists(DmRecord::class)) {
+            try { $hasSubmissionId = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','submission_id'); } catch (\Throwable $__) { $hasSubmissionId = true; }
+            try { $hasDinasId = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','dinas_id'); } catch (\Throwable $___) { $hasDinasId = false; }
+            try { $hasName = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','name'); } catch (\Throwable $____) { $hasName = false; }
+            try { $hasPeriod = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','period'); } catch (\Throwable $_____) { $hasPeriod = false; }
+            $rec = $hasSubmissionId ? DmRecord::where('submission_id', $submission->id)->first() : DmRecord::where(function($qq) use($hasDinasId,$hasName,$hasPeriod,$submission){
+                if ($hasDinasId) { $qq->where('dinas_id', $submission->dinas_id); }
+                if ($hasName) { $qq->where('name', $submission->judul_data); }
+                if ($hasPeriod) { $qq->where('period', $submission->tahun_perencanaan); }
+            })->first();
+            if ($rec) { $rec->update(['status'=>'Rejected','pic'=>$u->name ?? null]); }
+        }
+        return redirect()->route('datamanagement')->with('success', 'Pengajuan ditolak');
+    }
+
+    // Missing methods restored for compatibility
     public function records(Request $request)
     {
         $u = \Illuminate\Support\Facades\Auth::user();
@@ -314,17 +357,6 @@ class DataManagementController extends Controller
             ];
         });
         return response()->json($rows);
-    }
-
-    public function destroyRecord(DmRecord $record)
-    {
-        $u = \Illuminate\Support\Facades\Auth::user();
-        if (!$u) return response()->json(['error'=>'unauthorized'], 401);
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $record->dinas_id !== $u->dinas_id) {
-            return response()->json(['error'=>'forbidden'], 403);
-        }
-        $record->delete();
-        return response()->json(['success'=>true]);
     }
 
     public function storeRecord(Request $request)
@@ -412,29 +444,15 @@ class DataManagementController extends Controller
         ]);
     }
 
-    public function reject(Request $request, DataSubmission $submission)
+    public function destroyRecord(DmRecord $record)
     {
         $u = \Illuminate\Support\Facades\Auth::user();
-        if (!$u) { return redirect()->route('login'); }
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $submission->dinas_id !== $u->dinas_id) {
-            return redirect()->route('datamanagement')->with('error', 'Tidak berhak menolak');
+        if (!$u) return response()->json(['error'=>'unauthorized'], 401);
+        if ($u->role === 'admin_dinas' && $u->dinas_id && $record->dinas_id !== $u->dinas_id) {
+            return response()->json(['error'=>'forbidden'], 403);
         }
-        $submission->status = 'rejected';
-        $submission->catatan_revisi = $request->input('catatan_revisi');
-        $submission->save();
-        if (class_exists(DmRecord::class)) {
-            try { $hasSubmissionId = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','submission_id'); } catch (\Throwable $__) { $hasSubmissionId = true; }
-            try { $hasDinasId = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','dinas_id'); } catch (\Throwable $___) { $hasDinasId = false; }
-            try { $hasName = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','name'); } catch (\Throwable $____) { $hasName = false; }
-            try { $hasPeriod = \Illuminate\Support\Facades\Schema::hasColumn('dm_records','period'); } catch (\Throwable $_____) { $hasPeriod = false; }
-            $rec = $hasSubmissionId ? DmRecord::where('submission_id', $submission->id)->first() : DmRecord::where(function($qq) use($hasDinasId,$hasName,$hasPeriod,$submission){
-                if ($hasDinasId) { $qq->where('dinas_id', $submission->dinas_id); }
-                if ($hasName) { $qq->where('name', $submission->judul_data); }
-                if ($hasPeriod) { $qq->where('period', $submission->tahun_perencanaan); }
-            })->first();
-            if ($rec) { $rec->update(['status'=>'Rejected','pic'=>$u->name ?? null]); }
-        }
-        return redirect()->route('datamanagement')->with('success', 'Pengajuan ditolak');
+        $record->delete();
+        return response()->json(['success'=>true]);
     }
 
     public function dlhRows(Request $request)
@@ -515,190 +533,11 @@ class DataManagementController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function opdRows(Request $request)
-    {
-        $u = Auth::user(); if(!$u) return response()->json([],401);
-        $opd = $request->query('opd'); $key = $request->query('key');
-        if(!$opd || !$key) return response()->json([]);
-        $dinas = \App\Models\Dinas::where('nama_dinas',$opd)->first();
-        if(!$dinas) return response()->json([]);
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $u->dinas_id !== $dinas->id) return response()->json([],403);
-        $rows = OpdRow::where('dinas_id',$dinas->id)->where('table_key',$key)->orderBy('created_at','desc')->get()->map(function($r){
-            return [ 'id'=>$r->id, 'uraian'=>$r->uraian, 'satuan'=>$r->satuan, 'values'=>$r->values ?: [] ];
-        });
-        return response()->json($rows);
-    }
-
-    public function opdStoreRow(Request $request)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate([
-            'opd' => 'required|string|max:255',
-            'key' => 'required|string|max:255',
-            'uraian' => 'required|string|max:255',
-            'satuan' => 'nullable|string|max:255',
-            'values' => 'array'
-        ]);
-        $dinas = \App\Models\Dinas::where('nama_dinas',$validated['opd'])->first();
-        if(!$dinas) return response()->json(['error'=>'opd_not_found'],422);
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $u->dinas_id !== $dinas->id) return response()->json(['error'=>'forbidden'],403);
-        // Redirect ke tabel khusus per dinas bila key dikenali
-        if ($validated['key'] === 'koperasi_perkembangan' && class_exists(\App\Models\KoperasiRow::class)) {
-            $row = \App\Models\KoperasiRow::create(['dinas_id'=>$dinas->id,'uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-            return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-        }
-        if ($validated['key'] === 'dpmptsp_investasi' && class_exists(\App\Models\DpmptspInvestasiRow::class)) {
-            $row = \App\Models\DpmptspInvestasiRow::create(['dinas_id'=>$dinas->id,'uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-            return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-        }
-        $row = OpdRow::create([
-            'dinas_id'=>$dinas->id,
-            'table_key'=>$validated['key'],
-            'uraian'=>$validated['uraian'],
-            'satuan'=>$validated['satuan'] ?? null,
-            'values'=>$validated['values'] ?? []
-        ]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-    }
-
-    public function opdUpdateRow(Request $request, OpdRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate([
-            'uraian' => 'required|string|max:255',
-            'satuan' => 'nullable|string|max:255',
-            'values' => 'array'
-        ]);
-        $row->update([
-            'uraian'=>$validated['uraian'],
-            'satuan'=>$validated['satuan'] ?? null,
-            'values'=>$validated['values'] ?? []
-        ]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values]);
-    }
-
-    public function opdDestroyRow(OpdRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if ($u->role === 'admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $row->delete(); return response()->json(['success'=>true]);
-    }
-
-    public function perdaganganPdrbRows()
-    {
-        $u = Auth::user(); if(!$u) return response()->json([],401);
-        $rows = \App\Models\PerdaganganPdrbRow::orderBy('created_at','desc')->get()->map(function($r){
-            return ['id'=>$r->id,'uraian'=>$r->uraian,'satuan'=>$r->satuan,'values'=>$r->values ?: []];
-        });
-        return response()->json($rows);
-    }
-    public function perdaganganPdrbStoreRow(Request $request)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate(['uraian'=>'required|string|max:255','satuan'=>'nullable|string|max:255','values'=>'array']);
-        $row = \App\Models\PerdaganganPdrbRow::create(['dinas_id'=>$u->dinas_id,'uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-    }
-    public function perdaganganPdrbUpdateRow(Request $request, \App\Models\PerdaganganPdrbRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate(['uraian'=>'required|string|max:255','satuan'=>'nullable|string|max:255','values'=>'array']);
-        $row->update(['uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values]);
-    }
-    public function perdaganganPdrbDestroyRow(\App\Models\PerdaganganPdrbRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $row->delete(); return response()->json(['success'=>true]);
-    }
-
-    public function perdaganganEksRows()
-    {
-        $u = Auth::user(); if(!$u) return response()->json([],401);
-        $rows = \App\Models\PerdaganganEksporRow::orderBy('created_at','desc')->get()->map(function($r){
-            return ['id'=>$r->id,'uraian'=>$r->uraian,'satuan'=>$r->satuan,'values'=>$r->values ?: []];
-        });
-        return response()->json($rows);
-    }
-    public function perdaganganEksStoreRow(Request $request)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate(['uraian'=>'required|string|max:255','satuan'=>'nullable|string|max:255','values'=>'array']);
-        $row = \App\Models\PerdaganganEksporRow::create(['dinas_id'=>$u->dinas_id,'uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-    }
-    public function perdaganganEksUpdateRow(Request $request, \App\Models\PerdaganganEksporRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate(['uraian'=>'required|string|max:255','satuan'=>'nullable|string|max:255','values'=>'array']);
-        $row->update(['uraian'=>$validated['uraian'],'satuan'=>$validated['satuan'] ?? null,'values'=>$validated['values'] ?? []]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values]);
-    }
-    public function perdaganganEksDestroyRow(\App\Models\PerdaganganEksporRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $row->delete(); return response()->json(['success'=>true]);
-    }
-
-    public function ketapangRows()
-    {
-        $u = Auth::user(); if(!$u) return response()->json([],401);
-        $rows = KetahananPanganRow::orderBy('created_at','desc')->get()->map(function($r){
-            return ['id'=>$r->id,'uraian'=>$r->uraian,'satuan'=>$r->satuan,'values'=>$r->values ?: []];
-        });
-        return response()->json($rows);
-    }
-    public function ketapangStoreRow(Request $request)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate([
-            'uraian'=>'required|string|max:255',
-            'satuan'=>'nullable|string|max:255',
-            'values'=>'array'
-        ]);
-        $row = KetahananPanganRow::create([
-            'dinas_id'=>$u->dinas_id,
-            'uraian'=>$validated['uraian'],
-            'satuan'=>$validated['satuan'] ?? null,
-            'values'=>$validated['values'] ?? []
-        ]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values],201);
-    }
-    public function ketapangUpdateRow(Request $request, KetahananPanganRow $row)
-    {
-        $u = Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if (!in_array($u->role,['super_admin','admin_dinas'])) return response()->json(['error'=>'forbidden'],403);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $validated = $request->validate([
-            'uraian'=>'required|string|max:255',
-            'satuan'=>'nullable|string|max:255',
-            'values'=>'array'
-        ]);
-        $row->update([
-            'uraian'=>$validated['uraian'],
-            'satuan'=>$validated['satuan'] ?? null,
-            'values'=>$validated['values'] ?? []
-        ]);
-        return response()->json(['id'=>$row->id,'uraian'=>$row->uraian,'satuan'=>$row->satuan,'values'=>$row->values]);
-    }
-    public function ketapangDestroyRow(KetahananPanganRow $row)
-    {
-        $u = \Illuminate\Support\Facades\Auth::user(); if(!$u) return response()->json(['error'=>'unauthorized'],401);
-        if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
-        $row->delete(); return response()->json(['success'=>true]);
-    }
+    // Generic Methods for various dinas
+    public function ketapangRows() { return $this->genericRows(KetahananPanganRow::class); }
+    public function ketapangStoreRow(Request $r) { return $this->genericStore($r, KetahananPanganRow::class); }
+    public function ketapangUpdateRow(Request $r, KetahananPanganRow $row) { return $this->genericUpdate($r, $row); }
+    public function ketapangDestroyRow(KetahananPanganRow $row) { return $this->genericDestroy($row); }
 
     public function perikananInfRows() { return $this->genericRows(PerikananInfrastrukturRow::class); }
     public function perikananInfStoreRow(Request $r) { return $this->genericStore($r, PerikananInfrastrukturRow::class); }
@@ -750,15 +589,15 @@ class DataManagementController extends Controller
     public function pariwisataPemUpdateRow(Request $r, PariwisataPemanduRow $row) { return $this->genericUpdate($r, $row); }
     public function pariwisataPemDestroyRow(PariwisataPemanduRow $row) { return $this->genericDestroy($row); }
 
-    public function tanamanSayurRows() { return $this->genericRows(TanamanPanganSayurRow::class); }
-    public function tanamanSayurStoreRow(Request $r) { return $this->genericStore($r, TanamanPanganSayurRow::class); }
-    public function tanamanSayurUpdateRow(Request $r, TanamanPanganSayurRow $row) { return $this->genericUpdate($r, $row); }
-    public function tanamanSayurDestroyRow(TanamanPanganSayurRow $row) { return $this->genericDestroy($row); }
+    public function perdaganganPdrbRows() { return $this->genericRows(\App\Models\PerdaganganPdrbRow::class); }
+    public function perdaganganPdrbStoreRow(Request $r) { return $this->genericStore($r, \App\Models\PerdaganganPdrbRow::class); }
+    public function perdaganganPdrbUpdateRow(Request $r, \App\Models\PerdaganganPdrbRow $row) { return $this->genericUpdate($r, $row); }
+    public function perdaganganPdrbDestroyRow(\App\Models\PerdaganganPdrbRow $row) { return $this->genericDestroy($row); }
 
-    public function tanamanPanganRows() { return $this->genericRows(TanamanPanganKelompokRow::class); }
-    public function tanamanPanganStoreRow(Request $r) { return $this->genericStore($r, TanamanPanganKelompokRow::class); }
-    public function tanamanPanganUpdateRow(Request $r, TanamanPanganKelompokRow $row) { return $this->genericUpdate($r, $row); }
-    public function tanamanPanganDestroyRow(TanamanPanganKelompokRow $row) { return $this->genericDestroy($row); }
+    public function perdaganganEksRows() { return $this->genericRows(\App\Models\PerdaganganEksporRow::class); }
+    public function perdaganganEksStoreRow(Request $r) { return $this->genericStore($r, \App\Models\PerdaganganEksporRow::class); }
+    public function perdaganganEksUpdateRow(Request $r, \App\Models\PerdaganganEksporRow $row) { return $this->genericUpdate($r, $row); }
+    public function perdaganganEksDestroyRow(\App\Models\PerdaganganEksporRow $row) { return $this->genericDestroy($row); }
 
     public function perkebunanPopRows() { return $this->genericRows(\App\Models\PerkebunanPopRow::class); }
     public function perkebunanPopStoreRow(Request $r) { return $this->genericStore($r, \App\Models\PerkebunanPopRow::class); }
@@ -775,10 +614,110 @@ class DataManagementController extends Controller
     public function perkebunanLuasUpdateRow(Request $r, \App\Models\PerkebunanLuasRow $row) { return $this->genericUpdate($r, $row); }
     public function perkebunanLuasDestroyRow(\App\Models\PerkebunanLuasRow $row) { return $this->genericDestroy($row); }
 
-    public function koperasiRows() { return $this->genericRows(\App\Models\KoperasiRow::class); }
-    public function koperasiStoreRow(Request $r) { return $this->genericStore($r, \App\Models\KoperasiRow::class); }
-    public function koperasiUpdateRow(Request $r, \App\Models\KoperasiRow $row) { return $this->genericUpdate($r, $row); }
-    public function koperasiDestroyRow(\App\Models\KoperasiRow $row) { return $this->genericDestroy($row); }
+    public function koperasiRows(Request $request)
+    {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        if (!$u) { return response()->json([], 401); }
+
+        $q = \App\Models\OpdRow::where('table_key', 'koperasi_perkembangan');
+        if ($u->role === 'admin_dinas' && $u->dinas_id) {
+            $q->where('dinas_id', $u->dinas_id);
+        }
+
+        $rows = $q->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'uraian' => $r->uraian,
+                    'satuan' => $r->satuan,
+                    'values' => $r->values ?: []
+                ];
+            });
+
+        return response()->json($rows);
+    }
+
+    public function koperasiStoreRow(Request $request)
+    {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        if (!$u) { return response()->json(['error' => 'unauthorized'], 401); }
+        if (!in_array($u->role, ['super_admin', 'admin_dinas'])) { return response()->json(['error' => 'forbidden'], 403); }
+
+        $validated = $request->validate([
+            'uraian' => 'required|string|max:255',
+            'satuan' => 'nullable|string|max:255',
+            'values' => 'array'
+        ]);
+
+        $row = \App\Models\OpdRow::create([
+            'dinas_id' => $u->dinas_id,
+            'table_key' => 'koperasi_perkembangan',
+            'uraian' => $validated['uraian'],
+            'satuan' => $validated['satuan'] ?? null,
+            'values' => $validated['values'] ?? []
+        ]);
+
+        return response()->json([
+            'id' => $row->id,
+            'uraian' => $row->uraian,
+            'satuan' => $row->satuan,
+            'values' => $row->values
+        ], 201);
+    }
+
+    public function koperasiUpdateRow(Request $request, \App\Models\OpdRow $row)
+    {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        if (!$u) { return response()->json(['error' => 'unauthorized'], 401); }
+        if (!in_array($u->role, ['super_admin', 'admin_dinas'])) { return response()->json(['error' => 'forbidden'], 403); }
+
+        // Ensure this is a koperasi row
+        if ($row->table_key !== 'koperasi_perkembangan') {
+            return response()->json(['error' => 'invalid_row'], 400);
+        }
+
+        if ($u->role === 'admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) {
+            return response()->json(['error' => 'forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'uraian' => 'required|string|max:255',
+            'satuan' => 'nullable|string|max:255',
+            'values' => 'array'
+        ]);
+
+        $row->update([
+            'uraian' => $validated['uraian'],
+            'satuan' => $validated['satuan'] ?? null,
+            'values' => $validated['values'] ?? []
+        ]);
+
+        return response()->json([
+            'id' => $row->id,
+            'uraian' => $row->uraian,
+            'satuan' => $row->satuan,
+            'values' => $row->values
+        ]);
+    }
+
+    public function koperasiDestroyRow(\App\Models\OpdRow $row)
+    {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        if (!$u) { return response()->json(['error' => 'unauthorized'], 401); }
+
+        // Ensure this is a koperasi row
+        if ($row->table_key !== 'koperasi_perkembangan') {
+            return response()->json(['error' => 'invalid_row'], 400);
+        }
+
+        if ($u->role === 'admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) {
+            return response()->json(['error' => 'forbidden'], 403);
+        }
+
+        $row->delete();
+        return response()->json(['success' => true]);
+    }
 
     public function dpmptspRows() { return $this->genericRows(\App\Models\DpmptspInvestasiRow::class); }
     public function dpmptspStoreRow(Request $r) { return $this->genericStore($r, \App\Models\DpmptspInvestasiRow::class); }
@@ -799,6 +738,16 @@ class DataManagementController extends Controller
     public function perindustrianGrStoreRow(Request $r) { return $this->genericStore($r, \App\Models\PerindustrianGrowthRow::class); }
     public function perindustrianGrUpdateRow(Request $r, \App\Models\PerindustrianGrowthRow $row) { return $this->genericUpdate($r, $row); }
     public function perindustrianGrDestroyRow(\App\Models\PerindustrianGrowthRow $row) { return $this->genericDestroy($row); }
+
+    public function tanamanSayurRows() { return $this->genericRows(TanamanPanganSayurRow::class); }
+    public function tanamanSayurStoreRow(Request $r) { return $this->genericStore($r, TanamanPanganSayurRow::class); }
+    public function tanamanSayurUpdateRow(Request $r, TanamanPanganSayurRow $row) { return $this->genericUpdate($r, $row); }
+    public function tanamanSayurDestroyRow(TanamanPanganSayurRow $row) { return $this->genericDestroy($row); }
+
+    public function tanamanPanganRows() { return $this->genericRows(TanamanPanganKelompokRow::class); }
+    public function tanamanPanganStoreRow(Request $r) { return $this->genericStore($r, TanamanPanganKelompokRow::class); }
+    public function tanamanPanganUpdateRow(Request $r, TanamanPanganKelompokRow $row) { return $this->genericUpdate($r, $row); }
+    public function tanamanPanganDestroyRow(TanamanPanganKelompokRow $row) { return $this->genericDestroy($row); }
 
     protected function genericRows(string $modelClass)
     {
@@ -848,4 +797,5 @@ class DataManagementController extends Controller
         if ($u->role==='admin_dinas' && $u->dinas_id && $row->dinas_id !== $u->dinas_id) return response()->json(['error'=>'forbidden'],403);
         $row->delete(); return response()->json(['success'=>true]);
     }
+
 }

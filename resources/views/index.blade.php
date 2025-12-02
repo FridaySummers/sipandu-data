@@ -35,8 +35,8 @@
                 <h1 class="hero-title"><span class="highlight">SIPANDU DATA</span><br>Sistem Pemantauan dan Update Data Perencanaan</h1>
                 <p class="hero-subtitle">Inovasi digital untuk koordinasi data RKPD 12 dinas di Kabupaten Kolaka Utara.</p>
                 <div class="hero-stats">
-                    <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Dinas Terintegrasi</div></div>
-                    <div class="stat-item"><div class="stat-number">70%</div><div class="stat-label">Data Completion</div></div>
+                    <div class="stat-item"><div class="stat-number">{{ $totalDinas ?? 0 }}</div><div class="stat-label">Dinas Terintegrasi</div></div>
+                    <div class="stat-item"><div class="stat-number">{{ $completionRate ?? 0 }}%</div><div class="stat-label">Data Completion</div></div>
                     <div class="stat-item"><div class="stat-number">100%</div><div class="stat-label">Mobile Ready</div></div>
                 </div>
                 <div class="hero-actions">
@@ -57,7 +57,7 @@
                     <p>SIPANDU DATA dikembangkan sebagai respons terhadap tantangan koordinasi data antar dinas dalam penyusunan RKPD.</p>
                     <div class="developer-info">
                         <div class="developer-avatar"><i class="fas fa-user-tie"></i></div>
-                        <div class="developer-details"><h4>H. Agus Salim, S.Pi</h4><p>Kepala Bidang Ekonomi dan SDA</p><p>Bappeda Kabupaten Kolaka Utara</p><span class="badge">Developer & Innovator</span></div>
+                        <div class="developer-details"><h4>H. Agus Salim, S.Pi</h4><p>Kepala Bidang Ekonomi dan SDA</p><p>Bappeda Kabupaten Kolaka Utara</p><span class="badge">Innovator</span></div>
                     </div>
                 </div>
                 <div class="about-features">

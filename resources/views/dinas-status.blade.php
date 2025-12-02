@@ -6,10 +6,10 @@
     <div class="page active" id="dinas-status-page">
         <div class="page-header"><h1>Status Dinas</h1><p>Progres dan kelengkapan data per OPD</p></div>
         <div class="kpi-grid">
-            <div class="kpi-card" id="ds-kpi-total"><div class="kpi-icon info"><i class="fas fa-building"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Total OPD</div></div></div>
-            <div class="kpi-card" id="ds-kpi-complete"><div class="kpi-icon success"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Complete</div></div></div>
-            <div class="kpi-card" id="ds-kpi-progress"><div class="kpi-icon warning"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Progress</div></div></div>
-            <div class="kpi-card" id="ds-kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">0</div><div class="kpi-label">Pending</div></div></div>
+            <div class="kpi-card" id="ds-kpi-total"><div class="kpi-icon info"><i class="fas fa-building"></i></div><div class="kpi-content"><div class="kpi-value">{{ $totalDinas ?? 0 }}</div><div class="kpi-label">Total OPD</div></div></div>
+            <div class="kpi-card" id="ds-kpi-complete"><div class="kpi-icon success"><i class="fas fa-check-circle"></i></div><div class="kpi-content"><div class="kpi-value">{{ $completeDinas ?? 0 }}</div><div class="kpi-label">Complete</div></div></div>
+            <div class="kpi-card" id="ds-kpi-progress"><div class="kpi-icon warning"><i class="fas fa-hourglass-half"></i></div><div class="kpi-content"><div class="kpi-value">{{ $progressDinas ?? 0 }}</div><div class="kpi-label">Progress</div></div></div>
+            <div class="kpi-card" id="ds-kpi-pending"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-content"><div class="kpi-value">{{ $pendingDinas ?? 0 }}</div><div class="kpi-label">Pending</div></div></div>
         </div>
         <div class="card">
             <div class="card-header">
