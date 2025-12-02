@@ -600,23 +600,6 @@ function initLoginPage() {
   const passwordInput = document.getElementById('password');
   const loadingOverlay = document.getElementById('loading-overlay');
   const demoAccounts = document.querySelectorAll('.demo-account');
-  const tabSuper = document.getElementById('tab-super');
-  const tabAdmin = document.getElementById('tab-admin');
-  const tabUser = document.getElementById('tab-user');
-  const panelSuper = document.getElementById('panel-super');
-  const panelAdmin = document.getElementById('panel-admin');
-  const panelUser = document.getElementById('panel-user');
-  const ensureSpace = (elId) => {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const expected = 280;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    if (spaceBelow < expected) {
-      const delta = expected - spaceBelow + 12;
-      window.scrollBy({ top: delta, left: 0, behavior: 'smooth' });
-    }
-  };
 
   // Toggle password visibility
   if (togglePassword && passwordInput) {
@@ -645,68 +628,6 @@ function initLoginPage() {
       Utils.showToast('Demo credentials filled!', 'success');
     });
   });
-
-  // Tab bar toggle
-  const setActiveTab = (target) => {
-    [tabSuper, tabAdmin, tabUser].forEach(btn => btn && btn.classList.remove('active'));
-    [panelSuper, panelAdmin, panelUser].forEach(p => { if (p) p.style.display = 'none'; });
-    if (target === 'super') { tabSuper?.classList.add('active'); panelSuper && (panelSuper.classList.add('active'), panelSuper.style.display = 'block'); document.getElementById('role').value = 'admin'; }
-    if (target === 'admin') { tabAdmin?.classList.add('active'); panelAdmin && (panelAdmin.classList.add('active'), panelAdmin.style.display = 'block'); document.getElementById('role').value = 'dinas'; document.getElementById('demo-admin-dinas-select')?.focus(); }
-    if (target === 'user') { tabUser?.classList.add('active'); panelUser && (panelUser.classList.add('active'), panelUser.style.display = 'block'); document.getElementById('role').value = 'user'; document.getElementById('demo-user-dinas-select')?.focus(); }
-  };
-
-  if (tabSuper && tabAdmin && tabUser) {
-    tabSuper.addEventListener('click', () => setActiveTab('super'));
-    tabAdmin.addEventListener('click', () => { setActiveTab('admin'); ensureSpace('demo-admin-dinas-select'); });
-    tabUser.addEventListener('click', () => { setActiveTab('user'); ensureSpace('demo-user-dinas-select'); });
-    // default active tab: admin dinas for faster testing
-    setActiveTab('admin');
-  }
-
-  // Dropdown demo for Admin Dinas
-  const adminSelect = document.getElementById('demo-admin-dinas-select');
-  const adminUseBtn = document.getElementById('demo-admin-use');
-  if (adminSelect) { adminSelect.addEventListener('mousedown', () => ensureSpace('demo-admin-dinas-select')); }
-  if (adminSelect && adminUseBtn) {
-    adminUseBtn.addEventListener('click', () => {
-      const slug = adminSelect.value;
-      if (!slug) { Utils.showToast('Pilih dinas terlebih dahulu', 'error'); return; }
-      const emailPart = slug.startsWith('dinas-') ? slug.replace('dinas-','') : slug;
-      const email = `admin.${emailPart}@kolakautara.go.id`;
-      document.getElementById('email').value = email;
-      document.getElementById('password').value = 'dinas123';
-      document.getElementById('role').value = 'dinas';
-      Utils.showToast('Kredensial admin dinas diisi', 'success');
-    });
-  }
-
-  // Dropdown demo untuk User Dinas
-  const userSelect = document.getElementById('demo-user-dinas-select');
-  const userUseBtn = document.getElementById('demo-user-use');
-  if (userSelect) { userSelect.addEventListener('mousedown', () => ensureSpace('demo-user-dinas-select')); }
-  if (userSelect && userUseBtn) {
-    userUseBtn.addEventListener('click', () => {
-      const slug = userSelect.value;
-      if (!slug) { Utils.showToast('Pilih dinas terlebih dahulu', 'error'); return; }
-      const emailPart = slug.startsWith('dinas-') ? slug.replace('dinas-','') : slug;
-      const email = `user.${emailPart}@kolakautara.go.id`;
-      document.getElementById('email').value = email;
-      document.getElementById('password').value = 'user123';
-      document.getElementById('role').value = 'user';
-      Utils.showToast('Kredensial user dinas diisi', 'success');
-    });
-  }
-
-  // Quick Super Admin button
-  const superBtn = document.getElementById('demo-super-use');
-  if (superBtn) {
-    superBtn.addEventListener('click', () => {
-      document.getElementById('email').value = 'admin.bappeda@kolakautara.go.id';
-      document.getElementById('password').value = 'sipandu2025';
-      document.getElementById('role').value = 'admin';
-      Utils.showToast('Kredensial super admin diisi', 'success');
-    });
-  }
 
   // Login form submission (dinonaktifkan; login ditangani oleh Laravel)
   /* if (loginForm) {

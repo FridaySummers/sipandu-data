@@ -6,74 +6,76 @@ use App\Models\User;
 use App\Models\Dinas;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // 1. Super Admin (Bappeda)
-        // Kita asumsikan Bappeda adalah dinas pertama atau id tertentu, 
-        // tapi untuk super admin biasanya dinas_id bisa null atau set ke Bappeda.
-        $bappeda = Dinas::where('kode_dinas', 'bappeda')->first();
-
-        User::firstOrCreate([
+        // Super Admin (Bappeda)
+        User::create([
+            'name' => 'Super Admin Bappeda',
             'email' => 'admin.bappeda@kolakautara.go.id',
-        ], [
-            'name' => 'Admin Bappeda',
             'password' => Hash::make('sipandu2025'),
             'role' => 'super_admin',
-            'position' => 'Administrator Utama',
-            'dinas_id' => $bappeda ? $bappeda->id : null,
-        ]);
-
-        // 2. Admin Dinas untuk seluruh dinas
-        Dinas::all()->each(function ($dinas) {
-            if ($dinas->kode_dinas === 'bappeda') {
-                return; // Hindari bentrok email dengan super admin
-            }
-
-            $slug = $dinas->kode_dinas;
-            $emailPart = Str::startsWith($slug, 'dinas-') ? Str::replaceFirst('dinas-', '', $slug) : $slug;
-            $email = 'admin.' . $emailPart . '@kolakautara.go.id';
-
-            User::firstOrCreate([
-                'email' => $email,
-            ], [
-                'name' => 'Admin ' . $dinas->nama_dinas,
-                'password' => Hash::make('dinas123'),
-                'role' => 'admin_dinas',
-                'position' => 'Operator Dinas',
-                'dinas_id' => $dinas->id,
-            ]);
-        });
-
-        // 3. User Dinas untuk seluruh dinas (termasuk Bappeda)
-        Dinas::all()->each(function ($dinas) {
-            $slug = $dinas->kode_dinas;
-            $emailPart = Str::startsWith($slug, 'dinas-') ? Str::replaceFirst('dinas-', '', $slug) : $slug;
-            $email = 'user.' . $emailPart . '@kolakautara.go.id';
-
-            User::firstOrCreate([
-                'email' => $email,
-            ], [
-                'name' => 'User ' . $dinas->nama_dinas,
-                'password' => Hash::make('user123'),
-                'role' => 'user',
-                'position' => 'Staf Dinas',
-                'dinas_id' => $dinas->id,
-            ]);
-        });
-
-        // 4. User Demo (Umum)
-        User::firstOrCreate([
-            'email' => 'user.demo@example.com',
-        ], [
-            'name' => 'User Demo',
-            'password' => Hash::make('user123'),
-            'role' => 'user',
-            'position' => 'Staf Fungsional',
             'dinas_id' => null,
         ]);
+
+        // Admin untuk setiap dinas (10 dinas)
+        $dinas = Dinas::all();
+        
+        $adminData = [
+            ['dinas' => 'DPMPTSP', 'email' => 'admin.dpmptsp@kolakautara.go.id'],
+            ['dinas' => 'Perdagangan', 'email' => 'admin.perdagangan@kolakautara.go.id'],
+            ['dinas' => 'Perindustrian', 'email' => 'admin.perindustrian@kolakautara.go.id'],
+            ['dinas' => 'Koperasi', 'email' => 'admin.koperasi@kolakautara.go.id'],
+            ['dinas' => 'Tanaman Pangan', 'email' => 'admin.tanamanpangan@kolakautara.go.id'],
+            ['dinas' => 'Perkebunan', 'email' => 'admin.perkebunan@kolakautara.go.id'],
+            ['dinas' => 'Perikanan', 'email' => 'admin.perikanan@kolakautara.go.id'],
+            ['dinas' => 'Ketahanan Pangan', 'email' => 'admin.ketapang@kolakautara.go.id'],
+            ['dinas' => 'Pariwisata', 'email' => 'admin.pariwisata@kolakautara.go.id'],
+            ['dinas' => 'DLH', 'email' => 'admin.dlh@kolakautara.go.id'],
+        ];
+
+        foreach ($adminData as $data) {
+            $dinasModel = $dinas->where('nama_dinas', $data['dinas'])->first();
+            
+            if ($dinasModel) {
+                User::create([
+                    'name' => 'Admin ' . $data['dinas'],
+                    'email' => $data['email'],
+                    'password' => Hash::make('dinas123'),
+                    'role' => 'admin_dinas',
+                    'dinas_id' => $dinasModel->id,
+                ]);
+            }
+        }
+
+        // User untuk setiap dinas (10 user, satu untuk setiap dinas)
+        $userData = [
+            ['dinas' => 'DPMPTSP', 'email' => 'user.dpmptsp@example.com'],
+            ['dinas' => 'Perdagangan', 'email' => 'user.perdagangan@example.com'],
+            ['dinas' => 'Perindustrian', 'email' => 'user.perindustrian@example.com'],
+            ['dinas' => 'Koperasi', 'email' => 'user.koperasi@example.com'],
+            ['dinas' => 'Tanaman Pangan', 'email' => 'user.tanamanpangan@example.com'],
+            ['dinas' => 'Perkebunan', 'email' => 'user.perkebunan@example.com'],
+            ['dinas' => 'Perikanan', 'email' => 'user.perikanan@example.com'],
+            ['dinas' => 'Ketahanan Pangan', 'email' => 'user.ketapang@example.com'],
+            ['dinas' => 'Pariwisata', 'email' => 'user.pariwisata@example.com'],
+            ['dinas' => 'DLH', 'email' => 'user.dlh@example.com'],
+        ];
+
+        foreach ($userData as $data) {
+            $dinasModel = $dinas->where('nama_dinas', $data['dinas'])->first();
+            
+            if ($dinasModel) {
+                User::create([
+                    'name' => 'User ' . $data['dinas'],
+                    'email' => $data['email'],
+                    'password' => Hash::make('user123'),
+                    'role' => 'user',
+                    'dinas_id' => $dinasModel->id,
+                ]);
+            }
+        }
     }
 }

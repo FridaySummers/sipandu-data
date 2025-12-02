@@ -4,12 +4,20 @@
             <div class="user-avatar"><i class="fas fa-user-tie"></i></div>
             <div class="user-details">
                 <h4 id="sidebar-user-name">{{ auth()->user()->name ?? 'User' }}</h4>
-                <p id="sidebar-user-role">{{ auth()->user()->position ?? 'Role' }}</p>
+                <p id="sidebar-user-role">
+                    @if(auth()->user()->role === 'super_admin')
+                        Super Admin Bappeda
+                    @elseif(auth()->user()->role === 'admin_dinas')
+                        Admin {{ auth()->user()->dinas->nama_dinas ?? '' }}
+                    @else
+                        User {{ auth()->user()->dinas->nama_dinas ?? '' }}
+                    @endif
+                </p>
             </div>
         </div>
     </div>
 
-<nav class="sidebar-nav">
+    <nav class="sidebar-nav">
         <ul class="nav-menu">
             {{-- Dashboard --}}
             <li class="nav-item {{ Route::is('dashboard') ? 'active' : '' }}">
@@ -19,14 +27,11 @@
             </li>
 
             {{-- Data Management --}}
-            @php($role = auth()->user()->role ?? null)
-            @if($role !== 'user')
             <li class="nav-item {{ Route::is('datamanagement') ? 'active' : '' }}">
                 <a href="{{ route('datamanagement') }}" class="nav-link">
                     <i class="fas fa-database"></i><span>Data Management</span>
                 </a>
             </li>
-            @endif
 
             {{-- Laporan --}}
             <li class="nav-item {{ Route::is('reports') ? 'active' : '' }}">
@@ -63,45 +68,45 @@
                 </a>
             </li>
 
-            {{-- Menu Dinas (Tetap statis dulu tidak apa-apa, atau bisa dihapus jika belum ada routenya) --}}
+            {{-- DINAS TERKAIT SECTION - MODIFIED FOR DYNAMIC SYSTEM --}}
             <li class="nav-header">Dinas Terkait</li>
-            @php($role = auth()->user()->role ?? null)
-            @php($userDinas = auth()->user()->dinas_id ? \App\Models\Dinas::find(auth()->user()->dinas_id) : null)
-            @php($routeMap = [
-                'dpmptsp' => ['name'=>'DPMPTSP','route'=>'dinas.dpmptsp','icon'=>'fas fa-handshake'],
-                'dinas-perdagangan' => ['name'=>'Perdagangan','route'=>'dinas.perdagangan','icon'=>'fas fa-store'],
-                'dinas-perindustrian' => ['name'=>'Perindustrian','route'=>'dinas.perindustrian','icon'=>'fas fa-industry'],
-                'dinas-koperasi-dan-ukm' => ['name'=>'Koperasi','route'=>'dinas.koperasi','icon'=>'fas fa-users'],
-                'dinas-pertanian-tanaman-pangan' => ['name'=>'Tanaman Pangan','route'=>'dinas.tanaman-pangan','icon'=>'fas fa-seedling'],
-                'dinas-perkebunan-dan-peternakan' => ['name'=>'Perkebunan','route'=>'dinas.perkebunan','icon'=>'fas fa-tree'],
-                'dinas-perikanan' => ['name'=>'Perikanan','route'=>'dinas.perikanan','icon'=>'fas fa-fish'],
-                'dinas-ketahanan-pangan' => ['name'=>'Ketahanan Pangan','route'=>'dinas.ketapang','icon'=>'fas fa-wheat-awn'],
-                'dinas-pariwisata' => ['name'=>'Pariwisata','route'=>'dinas.pariwisata','icon'=>'fas fa-map-marked-alt'],
-                'dinas-lingkungan-hidup' => ['name'=>'DLH','route'=>'dinas.dlh','icon'=>'fas fa-leaf'],
-                'badan-pendapatan-daerah' => ['name'=>'Bapenda','route'=>'dinas.bapenda','icon'=>'fas fa-coins'],
-            ])
-            @if($role === 'super_admin')
-                @foreach($routeMap as $key => $conf)
-                    @php($isActive = Route::is($conf['route']))
-                    <li class="nav-item {{ $isActive ? 'active' : '' }}">
-                        <a href="{{ route($conf['route']) }}" class="nav-link"><i class="{{ $conf['icon'] }}"></i><span>{{ $conf['name'] }}</span></a>
+            
+            @auth
+                @php
+                    $role = auth()->user()->role;
+                    $userDinas = auth()->user()->dinas;
+                @endphp
+
+                @if($role === 'super_admin')
+                    {{-- Super Admin: Lihat semua dinas --}}
+                    @foreach(\App\Models\Dinas::all() as $dinasItem)
+                        <li class="nav-item {{ request()->is('dinas/'.$dinasItem->id) ? 'active' : '' }}">
+                            <a href="{{ route('dinas.show', $dinasItem->id) }}" class="nav-link">
+                                <i class="fas fa-building"></i>
+                                <span>{{ $dinasItem->nama_dinas }}</span>
+                            </a>
+                        </li>
+                    @endforeach
+                @elseif(in_array($role, ['admin_dinas', 'user']) && $userDinas)
+                    {{-- Admin Dinas & User: Hanya lihat dinas mereka --}}
+                    <li class="nav-item {{ request()->is('dinas/'.$userDinas->id) ? 'active' : '' }}">
+                        <a href="{{ route('dinas.show', $userDinas->id) }}" class="nav-link">
+                            <i class="fas fa-building"></i>
+                            <span>{{ $userDinas->nama_dinas }}</span>
+                        </a>
                     </li>
-                @endforeach
-            @elseif(($role === 'admin_dinas' || $role === 'user') && $userDinas && isset($routeMap[$userDinas->kode_dinas]))
-                @php($conf = $routeMap[$userDinas->kode_dinas])
-                @php($isActive = Route::is($conf['route']))
-                <li class="nav-item {{ $isActive ? 'active' : '' }}">
-                    <a href="{{ route($conf['route']) }}" class="nav-link"><i class="{{ $conf['icon'] }}"></i><span>{{ $conf['name'] }}</span></a>
-                </li>
-            @endif
+                @endif
+            @endauth
         </ul>
-</nav>
+    </nav>
 </aside>
+
 <style>
 #sidebar .nav-menu .nav-item .nav-link{border-radius:12px}
 #sidebar .nav-menu .nav-item.active .nav-link{background:linear-gradient(90deg,#60a5fa,#3b82f6);color:#ffffff}
 #sidebar .nav-menu .nav-item.active .nav-link i{color:#ffffff}
 </style>
+
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   var sb=document.getElementById('sidebar');

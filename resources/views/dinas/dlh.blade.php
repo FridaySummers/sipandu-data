@@ -40,11 +40,11 @@
       <div class="card dlh-card">
         <div class="card-header" style="position:relative;z-index:1">
           <div><h3><span class="icon"><i class="fas fa-tree"></i></span> Daya Tampung TPA</h3><div class="sub">Daya tampung TPA dan jumlah sampah masuk 2019–2023</div></div>
-          <div class="card-actions"><button class="btn btn-outline btn-sm" id="dlh-export"><i class="fas fa-download"></i> Export Data</button> <button class="btn btn-outline btn-sm" id="dlh-add" onclick="(function(e){e.preventDefault();e.stopPropagation();var p=document.getElementById('dlh-form-panel');var open=p.style.display!=='none';p.style.display=open?'none':'block';})(event)"><i class="fas fa-plus"></i> Ajukan Data</button></div>
+          <div class="card-actions"><button class="btn btn-outline btn-sm" id="dlh-export"><i class="fas fa-download"></i> Export Data</button> <button class="btn btn-outline btn-sm" id="dlh-add" onclick="(function(e){e.preventDefault();e.stopPropagation();var p=document.getElementById('dlh-form-panel');var open=p.style.display!=='none';p.style.display=open?'none':'block';})(event)"><i class="fas fa-plus"></i> Tambah Data</button></div>
         </div>
         <div class="card-body">
           <div class="dlh-panel" id="dlh-form-panel" style="display:none;">
-            <div class="form-group"><label>Nama Data</label><input type="text" id="dlh-uraian" class="form-control" placeholder="Contoh: Nama Data"></div>
+            <div class="form-group"><label>Uraian</label><input type="text" id="dlh-uraian" class="form-control" placeholder="Contoh: Daya tampung TPA, Luas RTH, dll"></div>
             <div class="form-group"><label>Satuan</label><input type="text" id="dlh-satuan" class="form-control" placeholder="Contoh: Ton, Ha, %"></div>
             <div class="dlh-grid">
               <div class="year-group"><div class="year-label">Tahun 2019</div><input class="form-control" id="dlh-2019" placeholder="0"></div>
@@ -83,41 +83,12 @@
 
 @push('scripts')
 <script>
-var dlhRows=[];var dlhEditId=null;var csrfToken=document.querySelector('meta[name="csrf-token"]')?.content||'';window.USER_ROLE=document.body.dataset.userRole||'';var opdName='Dinas Lingkungan Hidup';
-var dinasId=(document.body.dataset.dinasId||'')||null;
-function renderDlh(){var tb=document.getElementById('dlh-tbody');if(!tb)return;tb.innerHTML=dlhRows.map(function(r,i){return '<tr><td>'+(i+1)+'</td><td>'+r.uraian+'</td><td>'+(r.y2019||'-')+'</td><td>'+(r.y2020||'-')+'</td><td>'+(r.y2021||'-')+'</td><td>'+(r.y2022||'-')+'</td><td>'+(r.y2023||'-')+'</td><td><button class="btn btn-outline btn-sm action-btn" data-dlh-ed="'+i+'"><i class="fas fa-pen"></i></button> <button class="btn btn-outline btn-sm action-btn" data-dlh-del="'+i+'"><i class="fas fa-trash"></i></button></td></tr>';}).join('');}
-async function fetchDlh(){try{var res=await fetch('/dinas/dlh/rows',{headers:{'Accept':'application/json'}});var data=await res.json();dlhRows=Array.isArray(data)?data:[];renderDlh();}catch(_){dlhRows=[];renderDlh();}}
-document.addEventListener('DOMContentLoaded',function(){fetchDlh();});
-async function dlhSave(){var btn=document.getElementById('dlh-save');if(btn&&btn.dataset.busy==='1')return;if(btn)btn.dataset.busy='1';
-  var payload={
-    uraian:document.getElementById('dlh-uraian').value.trim(),
-    satuan:document.getElementById('dlh-satuan').value.trim(),
-    y2019:document.getElementById('dlh-2019').value.trim(),
-    y2020:document.getElementById('dlh-2020').value.trim(),
-    y2021:document.getElementById('dlh-2021').value.trim(),
-    y2022:document.getElementById('dlh-2022').value.trim(),
-    y2023:document.getElementById('dlh-2023').value.trim()
-  };
-  if(!payload.uraian){Utils.showToast('Isi Nama Data','error');if(btn)btn.dataset.busy='0';return;}
-  try{
-    var isUser=(window.USER_ROLE==='user');
-    if(!isUser){
-      var url= dlhEditId ? ('/dinas/dlh/rows/'+dlhRows[dlhEditId].id) : '/dinas/dlh/rows';
-      var method= dlhEditId ? 'PUT' : 'POST';
-      var res=await fetch(url,{method:method,headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify(payload)});
-      if(!res.ok){Utils.showToast('Gagal menyimpan DLH','error');if(btn)btn.dataset.busy='0';return;}
-      await fetchDlh();
-      Utils.showToast(dlhEditId?'Data diperbarui':'Data ditambahkan','success');
-      dlhEditId=null;
-    }
-    var year = (payload.y2023||'').replace(/[^0-9]/g,'').slice(0,4) || new Date().getFullYear().toString();
-    await fetch('/data-management/submit',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},body:JSON.stringify({opd:opdName,dinas_id:dinasId,judul_data:payload.uraian,deskripsi:payload.satuan?('Satuan: '+payload.satuan):null,file_path:'dlh_inline',tahun_perencanaan:year})});
-    document.getElementById('dlh-form-panel').style.display='none';
-    Utils.showToast('Pengajuan dikirim ke Data Management','success');
-  }catch(e){Utils.showToast('Gagal menyimpan DLH','error');}
-  if(btn)setTimeout(function(){btn.dataset.busy='0';},0);
-}
-function dlhCancel(){document.getElementById('dlh-form-panel').style.display='none';dlhEditId=null;}
+var dlhRows=[{no:1,uraian:"Daya tampung TPA Totallang",y2019:"16.568",y2020:"13.823",y2021:"11.078",y2022:"8.319",y2023:"5.002"},{no:2,uraian:"Jumlah sampah yg masuk TPA Totallang",y2019:"2.744",y2020:"2.744",y2021:"2.759",y2022:"2.761",y2023:"2.753"}];
+function renderDlh(){var tb=document.getElementById('dlh-tbody');if(!tb)return;tb.innerHTML=dlhRows.map(function(r,i){return '<tr><td>'+r.no+'</td><td>'+r.uraian+'</td><td>'+(r.y2019||'-')+'</td><td>'+(r.y2020||'-')+'</td><td>'+(r.y2021||'-')+'</td><td>'+(r.y2022||'-')+'</td><td>'+(r.y2023||'-')+'</td><td><button class="btn btn-outline btn-sm action-btn" data-dlh-ed="'+i+'"><i class="fas fa-pen"></i></button> <button class="btn btn-outline btn-sm action-btn" data-dlh-del="'+i+'"><i class="fas fa-trash"></i></button></td></tr>';}).join('');}
+renderDlh();
+document.addEventListener('DOMContentLoaded',function(){renderDlh();});
+function dlhSave(){var btn=document.getElementById('dlh-save');if(btn&&btn.dataset.busy==='1')return;if(btn)btn.dataset.busy='1';dlhRows.push({no:dlhRows.length+1,uraian:document.getElementById('dlh-uraian').value,y2019:document.getElementById('dlh-2019').value,y2020:document.getElementById('dlh-2020').value,y2021:document.getElementById('dlh-2021').value,y2022:document.getElementById('dlh-2022').value,y2023:document.getElementById('dlh-2023').value});renderDlh();document.getElementById('dlh-form-panel').style.display='none';try{Utils.showToast('Data DLH ditambahkan','success');}catch(e){}if(btn)setTimeout(function(){btn.dataset.busy='0';},0);}
+function dlhCancel(){document.getElementById('dlh-form-panel').style.display='none';}
 window.dlhSave=dlhSave;window.dlhCancel=dlhCancel;
 document.addEventListener('click', function(e) {
   var ed = e.target.closest('[data-dlh-ed]');
@@ -127,7 +98,7 @@ document.addEventListener('click', function(e) {
   var i = parseInt((ed || del).getAttribute(ed ? 'data-dlh-ed' : 'data-dlh-del'), 10);
 
   if (ed) {
-    var r = dlhRows[i]; dlhEditId = i;
+    var r = dlhRows[i];
     document.getElementById('dlh-uraian').value = r.uraian;
     document.getElementById('dlh-2019').value = r.y2019;
     document.getElementById('dlh-2020').value = r.y2020;
@@ -137,13 +108,16 @@ document.addEventListener('click', function(e) {
     document.getElementById('dlh-form-panel').style.display = 'block';
   } else {
     Utils.confirm('Hapus baris ini?', { okText: 'Hapus', cancelText: 'Batal', variant: 'danger' })
-      .then(async function(yes) {
+      .then(function(yes) {
         if (!yes) return;
-        try{var id = dlhRows[i]?.id; if(!id){Utils.showToast('ID tidak ditemukan','error'); return;} var res=await fetch('/dinas/dlh/rows/'+id,{method:'DELETE',headers:{'X-CSRF-TOKEN':csrfToken}}); if(res.ok){await fetchDlh(); Utils.showToast('Baris dihapus','success');} else { Utils.showToast('Gagal menghapus','error'); } }catch(e){ Utils.showToast('Gagal menghapus','error'); }
+        dlhRows.splice(i, 1);
+        dlhRows.forEach(function(r, idx) { r.no = idx + 1; });
+        renderDlh();
+        Utils.showToast('Baris dihapus', 'success');
       });
   }
 });
 function exportCsv(filename, headers, rows){var csv=[headers].concat(rows).map(function(row){return row.map(function(v){var s=(''+(v==null?'':v)).replace(/"/g,'""');return '"'+s+'"';}).join(',');}).join('\n');var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);} 
-;(function(){var ex=document.getElementById('dlh-export');if(ex){ex.addEventListener('click',function(){var h=['No','Uraian','2019','2020','2021','2022','2023'];var rows=dlhRows.map(function(r,i){return [i+1,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023]});exportCsv('dlh.csv',h,rows)});}})();
+;(function(){var ex=document.getElementById('dlh-export');if(ex){ex.addEventListener('click',function(){var h=['No','Uraian','2019','2020','2021','2022','2023'];var rows=dlhRows.map(function(r){return [r.no,r.uraian,r.y2019,r.y2020,r.y2021,r.y2022,r.y2023]});exportCsv('dlh.csv',h,rows)});}})();
 </script>
 @endpush
