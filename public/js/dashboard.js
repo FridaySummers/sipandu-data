@@ -26,11 +26,9 @@ class DashboardManager {
   // Check if user is authenticated
   checkAuthentication() {
     if (!authHandler.isAuthenticated()) {
-      window.location.href = '/fe/login';
       return;
     }
 
-    // Update user info in UI
     const currentUser = authHandler.getCurrentUser();
     this.updateUserInfo(currentUser);
   }
@@ -311,11 +309,61 @@ class DashboardManager {
     const titleInput = document.getElementById('forum-title');
     const opdSelect = document.getElementById('forum-opd');
     const catSelect = document.getElementById('forum-cat');
+    const titleCount = document.getElementById('forum-title-count');
+    const contentCount = document.getElementById('forum-content-count');
+    const titleErr = document.getElementById('forum-title-error');
+    const opdErr = document.getElementById('forum-opd-error');
+    const catErr = document.getElementById('forum-cat-error');
+    const contentErr = document.getElementById('forum-content-error');
+    const titleRow = titleInput?.closest('.form-row');
+    const opdRow = opdSelect?.closest('.form-row');
+    const catRow = catSelect?.closest('.form-row');
+    const contentInput = document.getElementById('forum-content');
+    const contentRow = contentInput?.closest('.form-row');
     if (!list) return;
 
     if (opdSelect && opdSelect.options.length === 0) {
-      dinasData.forEach(d=>{ const o=document.createElement('option'); o.value=d.name; o.textContent=d.name; opdSelect.appendChild(o); });
+      const ph=document.createElement('option'); ph.value=''; ph.textContent='Pilih OPD'; opdSelect.appendChild(ph);
+      const src = (typeof window!== 'undefined' && window.dinasData) ? window.dinasData : (typeof dinasData !== 'undefined' ? dinasData : []);
+      src.forEach(d=>{ const o=document.createElement('option'); o.value=d.name; o.textContent=d.name; opdSelect.appendChild(o); });
+      if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(opdSelect); }
     }
+
+    const TITLE_MAX = 80;
+    const CONTENT_MAX = 500;
+
+    const getLen = (el) => (el?.value?.length||0);
+    const setCount = (el, max, label) => { if (label) label.textContent = `${getLen(el)}/${max}`; };
+    const showErr = (el, msg) => { if (el) el.textContent = msg || ''; };
+    const isValid = () => {
+      const t = titleInput?.value?.trim() || '';
+      const c = document.getElementById('forum-content')?.value?.trim() || '';
+      const o = opdSelect?.value || '';
+      const k = catSelect?.value || '';
+      showErr(titleErr, t.length>=10 ? '' : 'Minimal 10 karakter');
+      showErr(contentErr, c.length>=20 ? '' : 'Minimal 20 karakter');
+      showErr(opdErr, o ? '' : 'Pilih OPD');
+      showErr(catErr, k ? '' : 'Pilih kategori');
+      setCount(titleInput, TITLE_MAX, titleCount);
+      setCount(document.getElementById('forum-content'), CONTENT_MAX, contentCount);
+      const okTitle = t.length>=10;
+      const okContent = c.length>=20;
+      const okOpd = !!o;
+      const okCat = !!k;
+      const ok = okTitle && okContent && okOpd && okCat;
+      const setState = (row, good) => { if (!row) return; row.classList.remove('invalid','valid'); row.classList.add(good? 'valid':'invalid'); };
+      setState(titleRow, okTitle);
+      setState(contentRow, okContent);
+      setState(opdRow, okOpd);
+      setState(catRow, okCat);
+      if (saveBtn) saveBtn.disabled = !ok;
+      return ok;
+    };
+
+    if (titleInput) titleInput.addEventListener('input', isValid);
+    if (contentInput) contentInput.addEventListener('input', isValid);
+    if (opdSelect) opdSelect.addEventListener('change', isValid);
+    if (catSelect) catSelect.addEventListener('change', isValid);
 
     let threads = [
       {id:1,title:'Diskusi Metodologi Pengumpulan Data Ekonomi Regional',subtitle:'Bagaimana pendekatan terbaik untuk mengumpulkan data inflasi di daerah?',author:'Ahmad Yani',opd:'Dinas Perdagangan',category:'Metodologi',date:'2025-01-10',lastReply:'2 jam lalu',likes:24,replies:12,views:158,messages:['Gunakan definisi variabel yang konsisten','Pertimbangkan seasonal adjustment']},
@@ -386,10 +434,11 @@ class DashboardManager {
     if (detailClose) detailClose.onclick = () => { if (detailModal) detailModal.style.display='none'; };
 
     const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
-    if (newBtn) newBtn.onclick = () => toggleModal(true);
+    if (newBtn) newBtn.onclick = () => { toggleModal(true); isValid(); titleInput && titleInput.focus(); };
     if (closeBtn) closeBtn.onclick = () => toggleModal(false);
     if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
     if (saveBtn) saveBtn.onclick = () => {
+      if (!isValid()) { Utils.showToast('Lengkapi input diskusi', 'error'); return; }
       const title = titleInput?.value?.trim();
       const opd = opdSelect?.value || '';
       const cat = catSelect?.value || '';
@@ -401,8 +450,14 @@ class DashboardManager {
       toggleModal(false);
       titleInput && (titleInput.value='');
       document.getElementById('forum-content') && (document.getElementById('forum-content').value='');
+      if (opdSelect) { opdSelect.selectedIndex = 0; if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(opdSelect); } }
+      if (catSelect) { catSelect.selectedIndex = 0; if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(catSelect); } }
+      [titleRow,contentRow,opdRow,catRow].forEach(r=> r && r.classList.remove('valid','invalid'));
+      isValid();
       Utils.showToast('Diskusi dibuat', 'success');
     };
+
+    if (contentInput) contentInput.addEventListener('keydown', (e)=>{ if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); if (saveBtn && !saveBtn.disabled) saveBtn.click(); } });
   }
 
   initializeCalendar() {
@@ -530,14 +585,17 @@ class DashboardManager {
         .filter(d=> s ? d.status===s : true);
       renderKPI(list);
       const sorted = getSorted(list);
-      const rows = sorted.map(d=> `
-        <tr>
+      const rows = sorted.map(d=> {
+        const progClass = d.progress >= 80 ? 'high' : (d.progress >= 40 ? 'medium' : 'low');
+        const statClass = d.status==='Complete' ? 'status-complete' : (d.status==='Progress' ? 'status-progress' : 'status-pending');
+        return `
+        <tr class="row-accent ${d.status==='Complete' ? 'accent-green' : (d.status==='Progress' ? 'accent-blue' : 'accent-amber')}">
           <td><i class="${d.icon}" style="color:${d.color}; margin-right:8px"></i>${d.name}</td>
           <td>${d.fullName}</td>
-          <td><div class="progress-line"><div class="progress-line-fill" style="width:${d.progress}%; background:${d.color}"></div></div></td>
-          <td><span class="status-badge ${d.status==='Complete'?'approved': d.status==='Progress'?'inreview':'pending'}">${d.status}</span></td>
+          <td><div class="progress-line"><div class="progress-line-fill ${progClass}" style="width:${d.progress}%"></div></div></td>
+          <td><span class="status-badge ${statClass}">${d.status}</span></td>
         </tr>
-      `).join('');
+      `}).join('');
       table.innerHTML = `<thead><tr>
         <th data-sort="name">OPD</th>
         <th data-sort="fullName">Nama Lengkap</th>
@@ -817,17 +875,18 @@ let autoRefresh;
 
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
-  const initOnFe = path.startsWith('/fe/');
-  if (path.includes('dashboard.html') || initOnFe || path === '/dashboard') {
+  const backendPaths = ['/dashboard','/data-management','/reports','/forum','/calendar','/dinas-status','/settings'];
+  const initOnBackend = backendPaths.includes(path);
+  if (path.includes('dashboard.html') || initOnBackend) {
     dashboardManager = new DashboardManager();
     const routeMap = {
       '/dashboard': 'dashboard',
-      '/fe/datamanagement': 'data-management',
-      '/fe/reports': 'reports',
-      '/fe/forum': 'forum',
-      '/fe/calendar': 'calendar',
-      '/fe/dinas-status': 'dinas-status',
-      '/fe/settings': 'settings',
+      '/data-management': 'data-management',
+      '/reports': 'reports',
+      '/forum': 'forum',
+      '/calendar': 'calendar',
+      '/dinas-status': 'dinas-status',
+      '/settings': 'settings',
     };
     const target = routeMap[path];
     if (target) {
@@ -835,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Start auto-refresh only on dashboard
-    if (!initOnFe || path === '/fe/dashboard' || path.includes('dashboard.html')) {
+    if (path === '/dashboard' || path.includes('dashboard.html')) {
       //autoRefresh = new AutoRefresh(dashboardManager);
       //autoRefresh.start();
     }

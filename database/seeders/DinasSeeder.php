@@ -26,11 +26,12 @@ class DinasSeeder extends Seeder
         ];
 
         foreach ($daftarDinas as $nama) {
-            
-            Dinas::create([
+            $slug = Str::slug($nama);
+            Dinas::firstOrCreate([
+                'kode_dinas' => $slug,
+            ], [
                 'nama_dinas' => $nama,
-                'kode_dinas' => Str::slug($nama),
-                'kepala_dinas' => 'Kepala ' . $nama, // Data dummy
+                'kepala_dinas' => 'Kepala ' . $nama,
                 'alamat' => 'Komplek Perkantoran Pemda Kolaka Utara',
                 'jumlah_target_data' => rand(10, 50),
             ]);

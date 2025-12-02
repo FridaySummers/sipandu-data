@@ -147,7 +147,7 @@ const dinasData = [
     fullName: 'Dinas Ketahanan Pangan',
     status: 'Pending',
     progress: 35,
-    icon: 'fas fa-wheat',
+    icon: 'fas fa-wheat-awn',
     color: '#ef4444'
   },
   {
@@ -156,7 +156,7 @@ const dinasData = [
     fullName: 'Dinas Pariwisata',
     status: 'Complete',
     progress: 85,
-    icon: 'fas fa-map-marked-alt',
+    icon: 'fas fa-map-location-dot',
     color: '#22c55e'
   },
   {
@@ -228,37 +228,165 @@ const Utils = {
         .toast {
           position: fixed;
           top: 20px;
-          right: 20px;
+          left: 50%;
+          transform: translate(-50%, -20px);
           background: white;
           padding: 12px 16px;
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           border-left: 4px solid;
           z-index: 10000;
-          transform: translateX(100%);
-          transition: transform 0.3s ease;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          opacity: 0;
         }
         .toast-success { border-left-color: #22c55e; }
         .toast-error { border-left-color: #ef4444; }
         .toast-info { border-left-color: #06b6d4; }
         .toast-content { display: flex; align-items: center; gap: 8px; }
-        .toast.show { transform: translateX(0); }
+        .toast.show { transform: translate(-50%, 0); opacity: 1; }
       `;
       document.head.appendChild(styles);
     }
 
+    // remove any existing toast to avoid double-dismiss
+    document.querySelectorAll('.toast').forEach(t => t.remove());
     document.body.appendChild(toast);
 
     // Show toast
-    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => toast.classList.add('show'), 50);
+
+    // Click to dismiss immediately
+    toast.onclick = () => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 200);
+    };
 
     // Remove toast
     setTimeout(() => {
+      if (!document.body.contains(toast)) return;
       toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      setTimeout(() => toast.remove(), 200);
+    }, 2500);
+  }
+  ,
+  // Confirm dialog with custom modal
+  confirm: (message, options = {}) => {
+    const {
+      title = 'Konfirmasi',
+      okText = 'Hapus',
+      cancelText = 'Batal',
+      variant = 'danger'
+    } = options;
+
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-modal">
+          <div class="confirm-header">
+            <i class="fas fa-${variant==='danger'?'trash':'question-circle'}"></i>
+            <span>${title}</span>
+          </div>
+          <div class="confirm-body">${message}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-secondary btn-sm confirm-cancel">${cancelText}</button>
+            <button class="btn ${variant==='danger'?'btn-pink':'btn-primary'} btn-sm confirm-ok">${okText}</button>
+          </div>
+        </div>`;
+
+      if (!document.getElementById('confirm-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'confirm-styles';
+        styles.textContent = `
+          .confirm-overlay{position:fixed;inset:0;background:rgba(17,24,39,0.5);display:flex;align-items:flex-start;justify-content:center;padding-top:60px;z-index:10000}
+          .confirm-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(17,24,39,0.25);width:420px;max-width:90vw;padding:16px}
+          .confirm-header{display:flex;align-items:center;gap:10px;font-weight:700;color:#111827;margin-bottom:8px}
+          .confirm-header i{color:#ef4444}
+          .confirm-body{color:#374151;margin:8px 2px 14px 2px}
+          .confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+          .btn-pink{background:#f43f5e;border-color:#f43f5e;color:#fff}
+        `;
+        document.head.appendChild(styles);
+      }
+
+      document.body.appendChild(overlay);
+      const cleanup = () => { overlay.remove(); };
+      overlay.querySelector('.confirm-cancel').onclick = () => { cleanup(); resolve(false); };
+      overlay.querySelector('.confirm-ok').onclick = () => { cleanup(); resolve(true); };
+    });
   }
 };
+
+// Enhance native selects with rounded custom dropdowns
+document.addEventListener('DOMContentLoaded', () => {
+  window.CUSTOM_SELECT_ENABLED = true;
+  const enhanceSelect = (sel) => {
+    if (!sel || sel.dataset.csEnhanced === '1') return;
+    sel.style.display = 'none'; sel.dataset.csEnhanced = '1';
+    const wrap = document.createElement('div'); wrap.className = 'custom-select';
+    const ctrl = document.createElement('div'); ctrl.className = 'cs-control';
+    const val = document.createElement('div'); val.className = 'cs-value'; val.textContent = sel.options[sel.selectedIndex]?.text || sel.options[0]?.text || '';
+    const chev = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); chev.setAttribute('class','cs-chevron'); chev.setAttribute('viewBox','0 0 24 24'); chev.setAttribute('fill','none');
+    const inHero = !!sel.closest('.dm-hero');
+    chev.setAttribute('stroke', inHero ? '#ffffff' : '#64748b');
+    chev.setAttribute('stroke-width','2'); chev.setAttribute('stroke-linecap','round'); chev.setAttribute('stroke-linejoin','round'); chev.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+    ctrl.appendChild(val); ctrl.appendChild(chev);
+    const menu = document.createElement('div'); menu.className = 'cs-menu';
+    Array.from(sel.options).forEach((opt, idx) => {
+      const item = document.createElement('div'); item.className = 'cs-option' + (idx === sel.selectedIndex ? ' active' : ''); item.textContent = opt.text;
+      item.onclick = () => { sel.selectedIndex = idx; val.textContent = opt.text; menu.querySelectorAll('.cs-option').forEach(o=>o.classList.remove('active')); item.classList.add('active'); wrap.classList.remove('open'); sel.dispatchEvent(new Event('change', { bubbles:true })); };
+      menu.appendChild(item);
+    });
+    ctrl.onclick = () => { wrap.classList.toggle('open'); };
+    wrap.appendChild(ctrl); wrap.appendChild(menu);
+    // attach reference for future refresh
+    const refId = 'cs_' + Math.random().toString(36).slice(2);
+    wrap.id = refId; sel.dataset.csRef = refId;
+    sel.parentNode.insertBefore(wrap, sel);
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) wrap.classList.remove('open'); });
+  };
+  if (window.CUSTOM_SELECT_ENABLED) document.querySelectorAll('select').forEach(enhanceSelect);
+
+  // allow refreshing menu options dynamically
+  window.refreshCustomSelect = (sel) => {
+    if (!window.CUSTOM_SELECT_ENABLED) return;
+    if (!sel || !sel.dataset.csRef) return;
+    const wrap = document.getElementById(sel.dataset.csRef); if (!wrap) return;
+    const val = wrap.querySelector('.cs-value'); const menu = wrap.querySelector('.cs-menu');
+    if (!val || !menu) return;
+    // rebuild items
+    menu.innerHTML = '';
+    Array.from(sel.options).forEach((opt, idx) => {
+      const item = document.createElement('div');
+      item.className = 'cs-option' + (idx === sel.selectedIndex ? ' active' : '');
+      item.textContent = opt.text;
+      item.onclick = () => { sel.selectedIndex = idx; val.textContent = opt.text; menu.querySelectorAll('.cs-option').forEach(o=>o.classList.remove('active')); item.classList.add('active'); wrap.classList.remove('open'); sel.dispatchEvent(new Event('change', { bubbles:true })); };
+      menu.appendChild(item);
+    });
+    val.textContent = sel.options[sel.selectedIndex]?.text || sel.options[0]?.text || '';
+  };
+  window.enhanceCustomSelect = (sel) => { if (!window.CUSTOM_SELECT_ENABLED) return; try { enhanceSelect(sel); } catch(e){} };
+  window.revertCustomSelects = () => {
+    document.querySelectorAll('select[data-csEnhanced="1"]').forEach(sel => {
+      const ref = sel.dataset.csRef; const wrap = ref ? document.getElementById(ref) : null;
+      sel.style.display = ''; sel.dataset.csEnhanced = '';
+      if (wrap) wrap.remove(); sel.dataset.csRef = '';
+    });
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        if (!window.CUSTOM_SELECT_ENABLED) return;
+        if (node.tagName === 'SELECT') enhanceSelect(node);
+        if (node.querySelectorAll) node.querySelectorAll('select').forEach(enhanceSelect);
+      });
+    });
+  });
+  if (window.CUSTOM_SELECT_ENABLED) observer.observe(document.body, { childList: true, subtree: true });
+  if (!window.CUSTOM_SELECT_ENABLED) window.revertCustomSelects();
+});
 
 // Authentication Handler
 class AuthHandler {
@@ -296,7 +424,7 @@ class AuthHandler {
   // Logout user
   logout() {
     appState.clearUser();
-    window.location.href = '/fe';
+    window.location.href = '/';
   }
 
   // Check if user is authenticated
@@ -472,6 +600,23 @@ function initLoginPage() {
   const passwordInput = document.getElementById('password');
   const loadingOverlay = document.getElementById('loading-overlay');
   const demoAccounts = document.querySelectorAll('.demo-account');
+  const tabSuper = document.getElementById('tab-super');
+  const tabAdmin = document.getElementById('tab-admin');
+  const tabUser = document.getElementById('tab-user');
+  const panelSuper = document.getElementById('panel-super');
+  const panelAdmin = document.getElementById('panel-admin');
+  const panelUser = document.getElementById('panel-user');
+  const ensureSpace = (elId) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const expected = 280;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < expected) {
+      const delta = expected - spaceBelow + 12;
+      window.scrollBy({ top: delta, left: 0, behavior: 'smooth' });
+    }
+  };
 
   // Toggle password visibility
   if (togglePassword && passwordInput) {
@@ -488,11 +633,12 @@ function initLoginPage() {
   demoAccounts.forEach(account => {
     const button = account.querySelector('.btn');
     button.addEventListener('click', () => {
-      const username = account.dataset.username;
+      const email = account.dataset.email;
       const password = account.dataset.password;
       const role = account.dataset.role;
 
-      document.getElementById('username').value = username;
+      const emailInput = document.getElementById('email');
+      if (emailInput) emailInput.value = email;
       document.getElementById('password').value = password;
       document.getElementById('role').value = role;
 
@@ -500,8 +646,70 @@ function initLoginPage() {
     });
   });
 
-  // Login form submission
-  if (loginForm) {
+  // Tab bar toggle
+  const setActiveTab = (target) => {
+    [tabSuper, tabAdmin, tabUser].forEach(btn => btn && btn.classList.remove('active'));
+    [panelSuper, panelAdmin, panelUser].forEach(p => { if (p) p.style.display = 'none'; });
+    if (target === 'super') { tabSuper?.classList.add('active'); panelSuper && (panelSuper.classList.add('active'), panelSuper.style.display = 'block'); document.getElementById('role').value = 'admin'; }
+    if (target === 'admin') { tabAdmin?.classList.add('active'); panelAdmin && (panelAdmin.classList.add('active'), panelAdmin.style.display = 'block'); document.getElementById('role').value = 'dinas'; document.getElementById('demo-admin-dinas-select')?.focus(); }
+    if (target === 'user') { tabUser?.classList.add('active'); panelUser && (panelUser.classList.add('active'), panelUser.style.display = 'block'); document.getElementById('role').value = 'user'; document.getElementById('demo-user-dinas-select')?.focus(); }
+  };
+
+  if (tabSuper && tabAdmin && tabUser) {
+    tabSuper.addEventListener('click', () => setActiveTab('super'));
+    tabAdmin.addEventListener('click', () => { setActiveTab('admin'); ensureSpace('demo-admin-dinas-select'); });
+    tabUser.addEventListener('click', () => { setActiveTab('user'); ensureSpace('demo-user-dinas-select'); });
+    // default active tab: admin dinas for faster testing
+    setActiveTab('admin');
+  }
+
+  // Dropdown demo for Admin Dinas
+  const adminSelect = document.getElementById('demo-admin-dinas-select');
+  const adminUseBtn = document.getElementById('demo-admin-use');
+  if (adminSelect) { adminSelect.addEventListener('mousedown', () => ensureSpace('demo-admin-dinas-select')); }
+  if (adminSelect && adminUseBtn) {
+    adminUseBtn.addEventListener('click', () => {
+      const slug = adminSelect.value;
+      if (!slug) { Utils.showToast('Pilih dinas terlebih dahulu', 'error'); return; }
+      const emailPart = slug.startsWith('dinas-') ? slug.replace('dinas-','') : slug;
+      const email = `admin.${emailPart}@kolakautara.go.id`;
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = 'dinas123';
+      document.getElementById('role').value = 'dinas';
+      Utils.showToast('Kredensial admin dinas diisi', 'success');
+    });
+  }
+
+  // Dropdown demo untuk User Dinas
+  const userSelect = document.getElementById('demo-user-dinas-select');
+  const userUseBtn = document.getElementById('demo-user-use');
+  if (userSelect) { userSelect.addEventListener('mousedown', () => ensureSpace('demo-user-dinas-select')); }
+  if (userSelect && userUseBtn) {
+    userUseBtn.addEventListener('click', () => {
+      const slug = userSelect.value;
+      if (!slug) { Utils.showToast('Pilih dinas terlebih dahulu', 'error'); return; }
+      const emailPart = slug.startsWith('dinas-') ? slug.replace('dinas-','') : slug;
+      const email = `user.${emailPart}@kolakautara.go.id`;
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = 'user123';
+      document.getElementById('role').value = 'user';
+      Utils.showToast('Kredensial user dinas diisi', 'success');
+    });
+  }
+
+  // Quick Super Admin button
+  const superBtn = document.getElementById('demo-super-use');
+  if (superBtn) {
+    superBtn.addEventListener('click', () => {
+      document.getElementById('email').value = 'admin.bappeda@kolakautara.go.id';
+      document.getElementById('password').value = 'sipandu2025';
+      document.getElementById('role').value = 'admin';
+      Utils.showToast('Kredensial super admin diisi', 'success');
+    });
+  }
+
+  // Login form submission (dinonaktifkan; login ditangani oleh Laravel)
+  /* if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -519,7 +727,7 @@ function initLoginPage() {
 
         // Redirect to dashboard (served by PHP)
         setTimeout(() => {
-          window.location.href = '/fe/dashboard';
+          window.location.href = '/dashboard';
         }, 1000);
       } catch (error) {
         Utils.showToast('Login failed: ' + error.message, 'error');
@@ -527,7 +735,7 @@ function initLoginPage() {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
       }
     });
-  }
+  } */
 }
 
 // Counter animation
@@ -559,9 +767,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Determine current page and initialize
   const pathname = window.location.pathname;
 
-  if (pathname.includes('login.html') || pathname.includes('/fe/login')) {
+  if (pathname.includes('login.html') || pathname === '/login') {
     initLoginPage();
-  } else if (pathname.includes('dashboard.html') || pathname.includes('/fe/dashboard') || pathname === ('/dashboard') {
+  } else if (pathname.includes('dashboard.html') || pathname === '/dashboard') {
     // Dashboard initialization will be handled by dashboard.js
     console.log('Dashboard page detected');
   } else {

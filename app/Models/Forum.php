@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Forum extends Model
 {
-    protected \ = [
+    protected $fillable = [
         'title',
         'content',
         'user_id',
@@ -16,6 +16,6 @@ class Forum extends Model
 
     public function user()
     {
-        return \->belongsTo(User::class);
+        return $this->belongsTo(User::class);
     }
 }

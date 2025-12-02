@@ -1,70 +1,19 @@
 @extends('layouts.app')
-
-@section('title', 'Settings')
+@section('title', 'Pengaturan')
+@section('body-class', 'dashboard-page force-light')
 
 @section('content')
-<div class="settings-container">
-    <div class="page-header">
-        <h1>Settings</h1>
-    </div>
-
-    <div class="settings-content">
-        <div class="settings-sidebar">
-            <ul class="settings-menu">
-                <li><a href="#profile" class="active">Profile</a></li>
-                <li><a href="#account">Account</a></li>
-                <li><a href="#notifications">Notifications</a></li>
-                <li><a href="#preferences">Preferences</a></li>
-            </ul>
+    <div class="page active" id="settings-page">
+        <div class="page-header"><h1>Pengaturan</h1><p>Preferensi akun dan aplikasi</p></div>
+        <div class="settings-grid">
+            <div class="card"><div class="card-header"><h3>Preferensi Tampilan</h3></div><div class="card-body"><div class="form-row"><label>Mode Tema</label><select id="set-theme"><option value="light">Terang</option><option value="dark">Gelap</option></select></div><div class="form-row"><label>Notifikasi</label><select id="set-notif"><option value="all">Semua</option><option value="important">Penting saja</option><option value="none">Nonaktif</option></select></div><button class="btn btn-primary" id="set-save"><i class="fas fa-save"></i>Simpan</button></div></div>
+            <div class="card"><div class="card-header"><h3>Profil</h3></div><div class="card-body" id="profile-info"></div></div>
         </div>
 
-        <div class="settings-main">
-            <div id="profile" class="settings-section">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Profile Settings</h2>
-                    </div>
-                    <div class="card-body">
-                        <form>
-                            <div class="form-group">
-                                <label>Name</label>
-                                <input type="text" class="form-control" value="{{ auth()->user()->name }}" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" class="form-control" value="{{ auth()->user()->email }}" readonly>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Update Profile</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div id="account" class="settings-section" style="display:none;">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Account Settings</h2>
-                    </div>
-                    <div class="card-body">
-                        <form>
-                            <div class="form-group">
-                                <label>Current Password</label>
-                                <input type="password" class="form-control" placeholder="Enter current password">
-                            </div>
-                            <div class="form-group">
-                                <label>New Password</label>
-                                <input type="password" class="form-control" placeholder="Enter new password">
-                            </div>
-                            <div class="form-group">
-                                <label>Confirm Password</label>
-                                <input type="password" class="form-control" placeholder="Confirm new password">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Update Password</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
     </div>
-</div>
 @endsection
+
+@push('scripts')
+ 
+@endpush

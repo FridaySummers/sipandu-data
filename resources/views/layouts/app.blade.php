@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') - SIPANDU DATA</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/mobile.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/styles.css') }}?v=ds-shape-8">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v=ds-shape-8">
+    <link rel="stylesheet" href="{{ asset('css/mobile.css') }}?v=ds-shape-8">
     
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -21,13 +22,15 @@
     
     @stack('styles')
 </head>
-<body class="@yield('body-class', 'force-light')">
+<body class="@yield('body-class', 'force-light')" data-user-role="{{ auth()->user()->role ?? '' }}" data-dinas-id="{{ auth()->user()->dinas_id ?? '' }}">
     @include('components.top-nav')
     @include('components.sidebar')
     
     <main class="main-content">
         @yield('content')
     </main>
+
+    
     
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}"></script>
