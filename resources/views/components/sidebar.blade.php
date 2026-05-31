@@ -1,68 +1,145 @@
-@php($fe = \Illuminate\Support\Str::startsWith(request()->path(), 'fe'))
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="user-info">
-            <div class="user-avatar"><i class="fas fa-user-tie"></i></div>
+            <div class="user-avatar" style="background:transparent;border-radius:50%">
+                @php($pp = optional(auth()->user())->profile_photo_path ?? null)
+                @if($pp)
+                    <img src="{{ route('settings.photo.get', ['user' => auth()->id()]).('?v='.(optional(auth()->user()->updated_at)->timestamp ?? time())) }}" alt="Avatar" width="36" height="36" style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:block" loading="lazy" onerror="this.onerror=null;this.src='https://via.placeholder.com/36x36.png?text=User'" />
+                @else
+                    <i class="fas fa-user-tie"></i>
+                @endif
+            </div>
             <div class="user-details">
-                <h4 id="sidebar-user-name">{{ auth()->user()->name ?? 'User' }}</h4>
-                <p id="sidebar-user-role">{{ auth()->user()->position ?? 'Role' }}</p>
+                <h4 id="sidebar-user-name">{{ optional(auth()->user())->name ?? 'User' }}</h4>
+                @php($__role = optional(auth()->user())->role ?? null)
+                @php($__roleLabel = $__role === 'super_admin' ? 'Super Admin' : ($__role === 'admin_dinas' ? 'Admin Dinas' : ($__role === 'user' ? 'User' : 'Role')))
+                <p id="sidebar-user-role">{{ optional(auth()->user())->position ?? $__roleLabel }}</p>
             </div>
         </div>
     </div>
 
-    <nav class="sidebar-nav">
+<nav class="sidebar-nav">
         <ul class="nav-menu">
-            <li class="nav-item {{ $fe ? (request()->is('fe/dashboard') ? 'active' : '') : (Route::is('dashboard') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/dashboard') : route('dashboard') }}" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+            {{-- Dashboard --}}
+            <li class="nav-item {{ Route::is('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/datamanagement') ? 'active' : '') : (Route::is('datamanagement') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/datamanagement') : route('datamanagement') }}" class="nav-link"><i class="fas fa-database"></i><span>Data Management</span></a>
+
+            {{-- Data Management --}}
+            @php($role = optional(auth()->user())->role ?? null)
+            @if($role !== 'user')
+            <li class="nav-item {{ Route::is('datamanagement') ? 'active' : '' }}">
+                <a href="{{ route('datamanagement') }}" class="nav-link">
+                    <i class="fas fa-database"></i><span>Manajemen Data</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/reports') ? 'active' : '') : (Route::is('reports') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/reports') : route('reports') }}" class="nav-link"><i class="fas fa-chart-bar"></i><span>Laporan & Analisis</span></a>
+            @endif
+
+            
+
+            {{-- Forum --}}
+            <li class="nav-item {{ Route::is('forum') ? 'active' : '' }}">
+                <a href="{{ route('forum') }}" class="nav-link">
+                    <i class="fas fa-comments"></i><span>Forum Diskusi</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/forum') ? 'active' : '') : (Route::is('forum') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/forum') : route('forum') }}" class="nav-link"><i class="fas fa-comments"></i><span>Forum Diskusi</span></a>
+
+            {{-- Calendar --}}
+            <li class="nav-item {{ Route::is('calendar') ? 'active' : '' }}">
+                <a href="{{ route('calendar') }}" class="nav-link">
+                    <i class="fas fa-calendar"></i><span>Agenda & Kalender</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/calendar') ? 'active' : '') : (Route::is('calendar') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/calendar') : route('calendar') }}" class="nav-link"><i class="fas fa-calendar"></i><span>Agenda & Kalender</span></a>
+
+            {{-- Portal Dinas --}}
+            <li class="nav-item {{ Route::is('dinas-status') ? 'active' : '' }}">
+                <a href="{{ route('dinas-status') }}" class="nav-link">
+                    <i class="fas fa-building"></i><span>Portal Dinas</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/dinas-status') ? 'active' : '') : (Route::is('dinas-status') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/dinas-status') : route('dinas-status') }}" class="nav-link"><i class="fas fa-building"></i><span>Status Dinas</span></a>
+
+            @if((optional(auth()->user())->role ?? null) === 'super_admin')
+            <li class="nav-item {{ Route::is('settings.users.page') ? 'active' : '' }}">
+                <a href="{{ route('settings.users.page') }}" class="nav-link">
+                    <i class="fas fa-users-cog"></i><span>Manajemen Akun</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/settings') ? 'active' : '') : (Route::is('settings') ? 'active' : '') }}">
-                <a href="{{ $fe ? url('/fe/settings') : route('settings') }}" class="nav-link"><i class="fas fa-cog"></i><span>Pengaturan</span></a>
+            @endif
+
+            {{-- Pengaturan --}}
+            <li class="nav-item {{ Route::is('settings') ? 'active' : '' }}">
+                <a href="{{ route('settings') }}" class="nav-link">
+                    <i class="fas fa-cog"></i><span>Pengaturan</span>
+                </a>
             </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/dpmptsp') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/dpmptsp') }}" class="nav-link"><i class="fas fa-chart-line"></i><span>DPMPTSP</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/perdagangan') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/perdagangan') }}" class="nav-link"><i class="fas fa-cart-shopping"></i><span>Perdagangan</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/perindustrian') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/perindustrian') }}" class="nav-link"><i class="fas fa-industry"></i><span>Perindustrian</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/koperasi') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/koperasi') }}" class="nav-link"><i class="fas fa-people-group"></i><span>Koperasi</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/tanaman-pangan') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/tanaman-pangan') }}" class="nav-link"><i class="fas fa-seedling"></i><span>Tanaman Pangan</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/perkebunan') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/perkebunan') }}" class="nav-link"><i class="fas fa-leaf"></i><span>Perkebunan</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/ketapang') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/ketapang') }}" class="nav-link"><i class="fas fa-tree"></i><span>Ketapang</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/pariwisata') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/pariwisata') }}" class="nav-link"><i class="fas fa-umbrella-beach"></i><span>Pariwisata</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/dlh') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/dlh') }}" class="nav-link"><i class="fas fa-recycle"></i><span>DLH</span></a>
-            </li>
-            <li class="nav-item {{ $fe ? (request()->is('fe/perikanan') ? 'active' : '') : '' }}">
-                <a href="{{ url('/fe/perikanan') }}" class="nav-link"><i class="fas fa-fish"></i><span>Perikanan</span></a>
-            </li>
+
+            @php($role = optional(auth()->user())->role ?? null)
+            @php($userDinas = optional(auth()->user())->dinas_id ? \App\Models\Dinas::find(optional(auth()->user())->dinas_id) : null)
+            @php($routeMap = [
+                'dpmptsp' => ['name'=>'DPMPTSP','route'=>'dinas.dpmptsp','icon'=>'fas fa-handshake'],
+                'dinas-perdagangan' => ['name'=>'Perdagangan','route'=>'dinas.perdagangan','icon'=>'fas fa-store'],
+                'dinas-perindustrian' => ['name'=>'Perindustrian','route'=>'dinas.perindustrian','icon'=>'fas fa-industry'],
+                'dinas-koperasi-dan-ukm' => ['name'=>'Koperasi','route'=>'dinas.koperasi','icon'=>'fas fa-users'],
+                'dinas-pertanian-tanaman-pangan' => ['name'=>'Tanaman Pangan','route'=>'dinas.tanaman-pangan','icon'=>'fas fa-seedling'],
+                'dinas-perkebunan-dan-peternakan' => ['name'=>'Perkebunan','route'=>'dinas.perkebunan','icon'=>'fas fa-tree'],
+                'dinas-perikanan' => ['name'=>'Perikanan','route'=>'dinas.perikanan','icon'=>'fas fa-fish'],
+                'dinas-ketahanan-pangan' => ['name'=>'Ketahanan Pangan','route'=>'dinas.ketapang','icon'=>'fas fa-wheat-awn'],
+                'dinas-pariwisata' => ['name'=>'Pariwisata','route'=>'dinas.pariwisata','icon'=>'fas fa-map-marked-alt'],
+                'dinas-lingkungan-hidup' => ['name'=>'DLH','route'=>'dinas.dlh','icon'=>'fas fa-leaf'],
+                'badan-pendapatan-daerah' => ['name'=>'Bapenda','route'=>'dinas.bapenda','icon'=>'fas fa-coins'],
+            ])
+            @if($role === 'super_admin')
+                @php($isDropdownActive = false)
+                @foreach($routeMap as $key => $conf)
+                    @php($isDropdownActive = $isDropdownActive || Route::is($conf['route']))
+                @endforeach
+                <li class="nav-item dinas-dropdown {{ $isDropdownActive ? 'active' : '' }}">
+                    <a href="#" class="nav-link dinas-toggle">
+                        <i class="fas fa-building"></i><span>Pilih Dinas</span>
+                        <i class="fas fa-chevron-down" style="margin-left:auto"></i>
+                    </a>
+                    <ul class="nav-submenu">
+                        @foreach($routeMap as $key => $conf)
+                            @php($isActive = Route::is($conf['route']))
+                            <li class="nav-subitem {{ $isActive ? 'active' : '' }}">
+                                <a href="{{ route($conf['route']) }}" class="nav-sublink"><i class="{{ $conf['icon'] }}"></i><span>{{ $conf['name'] }}</span></a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </li>
+            @elseif(($role === 'admin_dinas' || $role === 'user') && $userDinas && isset($routeMap[$userDinas->kode_dinas]))
+                @php($conf = $routeMap[$userDinas->kode_dinas])
+                @php($isActive = Route::is($conf['route']))
+                <li class="nav-item {{ $isActive ? 'active' : '' }}">
+                    <a href="{{ route($conf['route']) }}" class="nav-link"><i class="{{ $conf['icon'] }}"></i><span>{{ $conf['name'] }}</span></a>
+                </li>
+            @endif
         </ul>
-    </nav>
+</nav>
 </aside>
+<style>
+#sidebar .nav-menu .nav-item .nav-link{border-radius:12px}
+#sidebar .nav-menu .nav-item.active .nav-link{background:linear-gradient(90deg,#60a5fa,#3b82f6);color:#ffffff}
+#sidebar .nav-menu .nav-item.active .nav-link i{color:#ffffff}
+/* Centered style for Manajemen Data menu */
+#sidebar .nav-menu .dinas-dropdown .nav-submenu{display:none;padding-left:8px;margin-top:6px;list-style:none}
+#sidebar .nav-menu .dinas-dropdown.open .nav-submenu{display:block}
+#sidebar .nav-menu .nav-subitem .nav-sublink{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px}
+#sidebar .nav-menu .nav-subitem .nav-sublink i{color:#3b82f6}
+#sidebar .nav-menu .nav-subitem.active .nav-sublink{background:linear-gradient(90deg,#60a5fa,#3b82f6);color:#ffffff}
+#sidebar .nav-menu .nav-subitem.active .nav-sublink i{color:#ffffff}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var sb=document.getElementById('sidebar');
+  try{var s=localStorage.getItem('sidebar-scroll');if(s!=null){sb.scrollTop=parseInt(s,10)||0;}}catch(e){}
+  document.querySelectorAll('#sidebar .nav-menu .nav-link').forEach(function(a){a.addEventListener('click',function(){try{localStorage.setItem('sidebar-scroll',document.getElementById('sidebar').scrollTop);}catch(e){}});});
+  var toggle=document.querySelector('#sidebar .dinas-dropdown .dinas-toggle');
+  if(toggle){
+    toggle.addEventListener('click',function(ev){ev.preventDefault();var parent=toggle.closest('.dinas-dropdown');if(!parent)return;var isOpen=parent.classList.contains('open');parent.classList[isOpen?'remove':'add']('open');});
+    document.querySelectorAll('#sidebar .dinas-dropdown .nav-submenu .nav-sublink').forEach(function(link){link.addEventListener('click',function(){var parent=toggle.closest('.dinas-dropdown');if(parent){parent.classList.remove('open');}});});
+  }
+});
+</script>

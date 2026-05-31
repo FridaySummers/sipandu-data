@@ -14,6 +14,7 @@ class DashboardManager {
     this.checkAuthentication();
     this.initializeUI();
     this.bindEvents();
+    this.startNotificationPolling();
     this.loadDashboardData();
     //this.renderActivityFeed(); DIMATIIN AGAR TIDAK TERTIMPA DENGAN DATABASE
     const active = document.querySelector('.page.active');
@@ -26,11 +27,9 @@ class DashboardManager {
   // Check if user is authenticated
   checkAuthentication() {
     if (!authHandler.isAuthenticated()) {
-      window.location.href = '/fe/login';
       return;
     }
 
-    // Update user info in UI
     const currentUser = authHandler.getCurrentUser();
     this.updateUserInfo(currentUser);
   }
@@ -51,7 +50,7 @@ class DashboardManager {
     this.initializeSidebar();
     this.initializeNavigation();
     this.initializeDropdowns();
-    UIComponents.renderNotifications();
+    // Hilangkan notifikasi dummy; akan digantikan data real dari server
   }
 
   // Initialize sidebar functionality
@@ -136,10 +135,11 @@ class DashboardManager {
       // Page-specific initialization
       if (pageName === 'dashboard') {
         this.refreshCharts();
+        this.initializeActivity();
       } else if (pageName === 'data-management') {
         this.initializeDataManagement();
       } else if (pageName === 'reports') {
-        this.initializeReports();
+        // removed
       } else if (pageName === 'forum') {
         this.initializeForum();
       } else if (pageName === 'calendar') {
@@ -221,6 +221,124 @@ class DashboardManager {
     }
   }
 
+  startNotificationPolling() {
+    let lastTs = '';
+    const badge = document.getElementById('notification-count');
+    const notifList = document.getElementById('notification-list');
+    const markAllBtn = document.querySelector('.mark-all-read');
+
+    const renderItems = (items) => {
+      if (!notifList) return;
+      const html = items.map(it => {
+        const icon = 'calendar-plus';
+        const ts = new Date(it.timestamp).toLocaleString('id-ID');
+        const unreadClass = it.unread ? 'unread' : '';
+        return `<div class="notification-item ${unreadClass}"><div class="notification-icon info"><i class="fas fa-${icon}"></i></div><div class="notification-content"><div class="notification-title">${it.title}</div><div class="notification-message">${it.description} • ${ts}</div></div></div>`;
+      }).join('');
+      notifList.innerHTML = html;
+    };
+
+    const setLoading = (on) => {
+      if (!notifList) return;
+      notifList.innerHTML = on ? `<div class="thread-meta">Memuat notifikasi...</div>` : '';
+    };
+
+    const setBadge = (count) => {
+      if (!badge) return;
+      badge.textContent = String(count || 0);
+      badge.style.display = (count || 0) > 0 ? 'block' : 'none';
+    };
+
+    const fetchInitial = () => {
+      setLoading(true);
+      fetch('/notifications').then(r=>r.json()).then(items=>{
+        setLoading(false);
+        if (!Array.isArray(items)) items = [];
+        renderItems(items);
+        const unread = items.filter(i=> i.unread).length;
+        setBadge(unread);
+        if (items[0]?.timestamp) lastTs = items[0].timestamp;
+      }).catch(()=>{
+        setLoading(false);
+        notifList && (notifList.innerHTML = `<div class="thread-meta" style="color:#ef4444">Gagal memuat notifikasi</div>`);
+      });
+    };
+
+    const pollNew = () => {
+      const url = '/notifications?since='+encodeURIComponent(lastTs||'');
+      fetch(url).then(r=>r.json()).then(items=>{
+        if (!Array.isArray(items)) items = [];
+        if (!items.length) return;
+        const html = items.map(it => {
+          const icon = 'calendar-plus';
+          const ts = new Date(it.timestamp).toLocaleString('id-ID');
+          const unreadClass = it.unread ? 'unread' : '';
+          return `<div class="notification-item ${unreadClass}"><div class="notification-icon info"><i class="fas fa-${icon}"></i></div><div class="notification-content"><div class="notification-title">${it.title}</div><div class="notification-message">${it.description} • ${ts}</div></div></div>`;
+        }).join('');
+        if (notifList) notifList.innerHTML = html + (notifList.innerHTML||'');
+        const incUnread = items.filter(i=> i.unread).length;
+        setBadge((parseInt(badge?.textContent||'0',10)||0) + incUnread);
+        if (items[0]?.timestamp) lastTs = items[0].timestamp;
+      }).catch(()=>{});
+    };
+
+    if (markAllBtn) {
+      markAllBtn.addEventListener('click', () => {
+        fetch('/notifications/read-all', { method:'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')?.content || '') } })
+          .then(r=> r.ok ? r.json() : Promise.reject())
+          .then(()=>{
+            setBadge(0);
+            document.querySelectorAll('#notification-list .notification-item.unread').forEach(el=> el.classList.remove('unread'));
+          }).catch(()=>{
+            notifList && (notifList.innerHTML = `<div class="thread-meta" style="color:#ef4444">Gagal memperbarui status notifikasi</div>`);
+          });
+      });
+    }
+
+    fetchInitial();
+    setInterval(pollNew, 10000);
+  }
+
+  initializeActivity() {
+    const list = document.getElementById('activity-list');
+    const opdSel = document.getElementById('activity-opd');
+    const prev = document.getElementById('activity-prev');
+    const next = document.getElementById('activity-next');
+    const pageText = document.getElementById('activity-page-text');
+    let page = 1, size = 10, opd = '', lastTs = '';
+    const render = () => {
+      const url = '/dashboard/activity?page='+page+'&size='+size+(opd?('&opd='+encodeURIComponent(opd)):'');
+      fetch(url).then(r=>r.json()).then(rows=>{
+        if (!Array.isArray(rows)) rows = [];
+        list.innerHTML = rows.map(r=>{
+          const icon = r.action==='create'?'plus-circle':(r.action==='update'?'pen-to-square':(r.action==='delete'?'trash':'check-circle'));
+          const sub = r.approval_status ? (' • '+r.approval_status) : '';
+          const title = (r.username||'-')+' ('+(r.role||'-')+')';
+          const meta = new Date(r.timestamp).toLocaleString('id-ID')+' • '+(r.entity||'')+' • ID '+(r.record_id||'-');
+          const name = (r.metadata && r.metadata.name) ? r.metadata.name : ((r.metadata && r.metadata.judul_data) ? r.metadata.judul_data : '-');
+          return `<div class="thread-item"><div class="thread-item-inner"><div class="thread-avatar"><i class="fas fa-${icon}"></i></div><div><div class="thread-title">${title}</div><div class="thread-subtitle">${(r.opd||'-')}${sub}</div><div class="thread-meta">${meta}</div></div><div class="thread-stats"><div><i class="fas fa-database"></i>${name}</div></div></div></div>`;
+        }).join('');
+        const count = rows.length;
+        pageText && (pageText.textContent = `Menampilkan ${count ? (((page-1)*size+1)+' - '+((page-1)*size+count)) : '0 - 0'} dari ${((page-1)*size)+count} aktivitas`);
+        if (prev) prev.disabled = page<=1; if (next) next.disabled = count < size;
+        if (rows[0]?.timestamp) lastTs = rows[0].timestamp;
+      }).catch(()=>{ if(list) list.innerHTML=''; });
+    };
+    const poll = () => {
+      const url = '/dashboard/activity?since='+encodeURIComponent(lastTs||'');
+      fetch(url).then(r=>r.json()).then(rows=>{
+        if (!Array.isArray(rows)) rows = [];
+        if (!rows.length) return;
+        if (rows[0]?.timestamp) lastTs = rows[0].timestamp;
+      }).catch(()=>{});
+    };
+    render();
+    setInterval(poll, 10000);
+    if (opdSel) opdSel.addEventListener('change', ()=>{ opd = opdSel.value; page=1; render(); });
+    if (prev) prev.addEventListener('click', ()=>{ if(page>1){ page--; render(); } });
+    if (next) next.addEventListener('click', ()=>{ page++; render(); });
+  }
+
   initializeDataManagement() {
     const opdSelect = document.getElementById('dm-target-opd');
     if (opdSelect && opdSelect.options.length <= 1) {
@@ -262,60 +380,55 @@ class DashboardManager {
     };
   }
 
-  initializeReports() {
-    const fillSelects = () => {
-      const opdFilter = document.getElementById('rep-opd-filter');
-      if (opdFilter && opdFilter.options.length <= 1) {
-        dinasData.forEach(d => {
-          const opt = document.createElement('option');
-          opt.value = d.name;
-          opt.textContent = d.name;
-          opdFilter.appendChild(opt);
-        });
-      }
-    };
-    fillSelects();
-
-    const monthlyCtx = document.getElementById('rep-monthly-chart');
-    const statusCtx = document.getElementById('rep-status-chart');
-    const categoryCtx = document.getElementById('rep-category-chart');
-    if (!monthlyCtx || !statusCtx || !categoryCtx) return;
-
-    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    new Chart(monthlyCtx, { type:'line', data:{ labels:months, datasets:[{ label:'Progress', data: months.map((_,i)=> 50+Math.round(Math.sin(i)*20)), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.2)', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false }});
-
-    new Chart(statusCtx, { type:'bar', data:{ labels:dinasData.map(d=>d.name), datasets:[{ label:'Complete', data:dinasData.map(d=> d.status==='Complete'?1:0), backgroundColor:'#22c55e' },{ label:'Progress', data:dinasData.map(d=> d.status==='In Progress'?1:0), backgroundColor:'#f59e0b' },{ label:'Pending', data:dinasData.map(d=> d.status==='Pending'?1:0), backgroundColor:'#ef4444' }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, stacked:true }, x:{ stacked:true } } }});
-
-    new Chart(categoryCtx, { type:'doughnut', data:{ labels:['Keuangan','Produksi','SDM','Konsumsi'], datasets:[{ data:[30,25,20,25], backgroundColor:['#3b82f6','#10b981','#f59e0b','#64748b'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
-
-    const exportPdf = document.getElementById('rep-export-pdf');
-    const exportXlsx = document.getElementById('rep-export-xlsx');
-    if (exportPdf) exportPdf.onclick = () => Utils.showToast('Export PDF dibuat', 'success');
-    if (exportXlsx) exportXlsx.onclick = () => Utils.showToast('Export XLSX dibuat', 'success');
-  }
+  // initializeReports removed
 
   initializeForum() {
     const list = document.getElementById('thread-list');
-    const detailModal = document.getElementById('forum-detail-modal');
-    const detailBody = document.getElementById('fdm-body');
-    const detailClose = document.getElementById('fdm-close');
-    const replySend = document.getElementById('fdm-reply-send');
-    const replyCancel = document.getElementById('fdm-reply-cancel');
-    const search = document.getElementById('forum-search');
-    const category = document.getElementById('forum-category');
-    const newBtn = document.getElementById('forum-new');
-    const modal = document.getElementById('forum-modal');
-    const closeBtn = document.getElementById('forum-close');
-    const cancelBtn = document.getElementById('forum-cancel');
-    const saveBtn = document.getElementById('forum-save');
-    const titleInput = document.getElementById('forum-title');
-    const opdSelect = document.getElementById('forum-opd');
-    const catSelect = document.getElementById('forum-cat');
-    if (!list) return;
+    if (!list) return; // halaman forum tidak aktif, lewati
+    return; // UI forum ditangani oleh script di forum.blade.php, hindari duplikasi
 
     if (opdSelect && opdSelect.options.length === 0) {
-      dinasData.forEach(d=>{ const o=document.createElement('option'); o.value=d.name; o.textContent=d.name; opdSelect.appendChild(o); });
+      const ph=document.createElement('option'); ph.value=''; ph.textContent='Pilih OPD'; opdSelect.appendChild(ph);
+      const src = (typeof window!== 'undefined' && window.dinasData) ? window.dinasData : (typeof dinasData !== 'undefined' ? dinasData : []);
+      src.forEach(d=>{ const o=document.createElement('option'); o.value=d.name; o.textContent=d.name; opdSelect.appendChild(o); });
+      if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(opdSelect); }
     }
+
+    const TITLE_MAX = 80;
+    const CONTENT_MAX = 500;
+
+    const getLen = (el) => (el?.value?.length||0);
+    const setCount = (el, max, label) => { if (label) label.textContent = `${getLen(el)}/${max}`; };
+    const showErr = (el, msg) => { if (el) el.textContent = msg || ''; };
+    const isValid = () => {
+      const t = titleInput?.value?.trim() || '';
+      const c = document.getElementById('forum-content')?.value?.trim() || '';
+      const o = opdSelect?.value || '';
+      const k = catSelect?.value || '';
+      showErr(titleErr, t.length>=10 ? '' : 'Minimal 10 karakter');
+      showErr(contentErr, c.length>=20 ? '' : 'Minimal 20 karakter');
+      showErr(opdErr, o ? '' : 'Pilih OPD');
+      showErr(catErr, k ? '' : 'Pilih kategori');
+      setCount(titleInput, TITLE_MAX, titleCount);
+      setCount(document.getElementById('forum-content'), CONTENT_MAX, contentCount);
+      const okTitle = t.length>=10;
+      const okContent = c.length>=20;
+      const okOpd = !!o;
+      const okCat = !!k;
+      const ok = okTitle && okContent && okOpd && okCat;
+      const setState = (row, good) => { if (!row) return; row.classList.remove('invalid','valid'); row.classList.add(good? 'valid':'invalid'); };
+      setState(titleRow, okTitle);
+      setState(contentRow, okContent);
+      setState(opdRow, okOpd);
+      setState(catRow, okCat);
+      if (saveBtn) saveBtn.disabled = !ok;
+      return ok;
+    };
+
+    if (titleInput) titleInput.addEventListener('input', isValid);
+    if (contentInput) contentInput.addEventListener('input', isValid);
+    if (opdSelect) opdSelect.addEventListener('change', isValid);
+    if (catSelect) catSelect.addEventListener('change', isValid);
 
     let threads = [
       {id:1,title:'Diskusi Metodologi Pengumpulan Data Ekonomi Regional',subtitle:'Bagaimana pendekatan terbaik untuk mengumpulkan data inflasi di daerah?',author:'Ahmad Yani',opd:'Dinas Perdagangan',category:'Metodologi',date:'2025-01-10',lastReply:'2 jam lalu',likes:24,replies:12,views:158,messages:['Gunakan definisi variabel yang konsisten','Pertimbangkan seasonal adjustment']},
@@ -386,10 +499,11 @@ class DashboardManager {
     if (detailClose) detailClose.onclick = () => { if (detailModal) detailModal.style.display='none'; };
 
     const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
-    if (newBtn) newBtn.onclick = () => toggleModal(true);
+    if (newBtn) newBtn.onclick = () => { toggleModal(true); isValid(); titleInput && titleInput.focus(); };
     if (closeBtn) closeBtn.onclick = () => toggleModal(false);
     if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
     if (saveBtn) saveBtn.onclick = () => {
+      if (!isValid()) { Utils.showToast('Lengkapi input diskusi', 'error'); return; }
       const title = titleInput?.value?.trim();
       const opd = opdSelect?.value || '';
       const cat = catSelect?.value || '';
@@ -401,99 +515,19 @@ class DashboardManager {
       toggleModal(false);
       titleInput && (titleInput.value='');
       document.getElementById('forum-content') && (document.getElementById('forum-content').value='');
+      if (opdSelect) { opdSelect.selectedIndex = 0; if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(opdSelect); } }
+      if (catSelect) { catSelect.selectedIndex = 0; if (typeof window !== 'undefined' && typeof window.refreshCustomSelect === 'function') { window.refreshCustomSelect(catSelect); } }
+      [titleRow,contentRow,opdRow,catRow].forEach(r=> r && r.classList.remove('valid','invalid'));
+      isValid();
       Utils.showToast('Diskusi dibuat', 'success');
     };
+
+    if (contentInput) contentInput.addEventListener('keydown', (e)=>{ if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); if (saveBtn && !saveBtn.disabled) saveBtn.click(); } });
   }
 
   initializeCalendar() {
-    const title = document.getElementById('cal-title');
-    const grid = document.getElementById('calendar-month');
-    const prev = document.getElementById('cal-prev');
-    const next = document.getElementById('cal-next');
-    const todayBtn = document.getElementById('cal-today');
-    const addBtn = document.getElementById('cal-add');
-    const eventList = document.getElementById('event-list');
-    const modal = document.getElementById('cal-modal');
-    const closeBtn = document.getElementById('cal-close');
-    const cancelBtn = document.getElementById('cal-cancel');
-    const saveBtn = document.getElementById('cal-save');
-    const evName = document.getElementById('cal-ev-name');
-    const evDate = document.getElementById('cal-ev-date');
-    const evType = document.getElementById('cal-ev-type');
-    const kpiEvents = document.getElementById('cal-kpi-events');
-    const kpiMeetings = document.getElementById('cal-kpi-meetings');
-    const kpiDeadlines = document.getElementById('cal-kpi-deadlines');
-    const kpiTraining = document.getElementById('cal-kpi-training');
-    if (!title || !grid) return;
-
-    let date = new Date();
-    let events = [
-      { day:5, title:'Rapat Koordinasi', color:'#2563eb', type:'Meeting' },
-      { day:12, title:'Deadline Upload', color:'#f59e0b', type:'Deadline' },
-      { day:15, title:'Workshop Validasi Data', color:'#7c3aed', type:'Training' },
-      { day:22, title:'Review Data', color:'#10b981', type:'Meeting' }
-    ];
-
-    const typeColor = (t)=> ({Meeting:'#2563eb', Deadline:'#f59e0b', Training:'#7c3aed'}[t]||'#64748b');
-
-    const renderKPIs = () => {
-      const month = date.getMonth();
-      const counts = {Meeting:0, Deadline:0, Training:0, total:0};
-      events.forEach(e=>{ counts.total++; if(counts[e.type]!=null) counts[e.type]++; });
-      if (kpiEvents) kpiEvents.textContent = counts.total;
-      if (kpiMeetings) kpiMeetings.textContent = counts.Meeting;
-      if (kpiDeadlines) kpiDeadlines.textContent = counts.Deadline;
-      if (kpiTraining) kpiTraining.textContent = counts.Training;
-    };
-
-    const render = () => {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const names = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-      title.textContent = `${names[month]} ${year}`;
-      const first = new Date(year, month, 1).getDay();
-      const days = new Date(year, month+1, 0).getDate();
-      grid.innerHTML = '';
-      for(let i=0;i<first;i++){ grid.innerHTML += `<div></div>`; }
-      for(let d=1; d<=days; d++){
-        const isToday = new Date().getDate()===d && new Date().getMonth()===month && new Date().getFullYear()===year;
-        const evs = events.filter(e=> e.day===d);
-        grid.innerHTML += `<div class="calendar-cell ${isToday?'today':''}"><div>${d}</div>${evs.map(e=>`<div class="event-badge" style="background:${typeColor(e.type)}">${e.title}</div>`).join('')}</div>`;
-      }
-      const upcoming = events
-        .map(e=> ({...e, dateObj: new Date(date.getFullYear(), date.getMonth(), e.day) }))
-        .sort((a,b)=> a.dateObj - b.dateObj);
-      eventList.innerHTML = upcoming.map(e=> `<div class="file-item"><div>${e.title}</div><div class="thread-meta">${e.type} • ${e.day} ${names[month]} ${date.getFullYear()}</div></div>`).join('');
-      renderKPIs();
-    };
-
-    render();
-
-    if (prev) prev.onclick = () => { date.setMonth(date.getMonth()-1); render(); };
-    if (next) next.onclick = () => { date.setMonth(date.getMonth()+1); render(); };
-    if (todayBtn) todayBtn.onclick = () => { date = new Date(); render(); };
-
-    const toggleModal = (show) => { if (modal) modal.style.display = show ? 'flex' : 'none'; };
-    if (addBtn) addBtn.onclick = () => toggleModal(true);
-    if (closeBtn) closeBtn.onclick = () => toggleModal(false);
-    if (cancelBtn) cancelBtn.onclick = () => toggleModal(false);
-    if (saveBtn) saveBtn.onclick = () => {
-      const name = evName?.value?.trim();
-      const dateStr = evDate?.value;
-      const type = evType?.value || 'Meeting';
-      if (!name || !dateStr) { Utils.showToast('Lengkapi nama dan tanggal', 'error'); return; }
-      const dt = new Date(dateStr);
-      if (isNaN(dt.getTime())) { Utils.showToast('Tanggal tidak valid', 'error'); return; }
-      if (dt.getMonth() !== date.getMonth() || dt.getFullYear() !== date.getFullYear()) {
-        date = new Date(dt.getFullYear(), dt.getMonth(), 1);
-      }
-      events.push({ day: dt.getDate(), title: name, color: typeColor(type), type });
-      render();
-      toggleModal(false);
-      evName && (evName.value='');
-      evDate && (evDate.value='');
-      Utils.showToast('Event ditambahkan', 'success');
-    };
+    // Disabled FE demo. Calendar page handles rendering via backend scripts in the view.
+    return;
   }
 
   initializeDinasStatus() {
@@ -518,26 +552,30 @@ class DashboardManager {
       const total = list.length;
       const comp = list.filter(d=> d.status==='Complete').length;
       const prog = list.filter(d=> d.status==='Progress').length;
-      const pend = list.filter(d=> d.status==='Pending').length;
+      const pend = list.filter(d=> d.status==='Menunggu Persetujuan').length;
       if (kTotal) kTotal.textContent = total;
       if (kComp) kComp.textContent = comp;
       if (kProg) kProg.textContent = prog;
       if (kPend) kPend.textContent = pend;
     };
+    const statusLabel = (st) => (st==='Menunggu Persetujuan' ? 'Menunggu Persetujuan' : st);
     const render = (q='', s='') => {
       const list = dinasData
         .filter(d=> d.name.toLowerCase().includes(q.toLowerCase()))
         .filter(d=> s ? d.status===s : true);
       renderKPI(list);
       const sorted = getSorted(list);
-      const rows = sorted.map(d=> `
-        <tr>
+      const rows = sorted.map(d=> {
+        const progClass = d.progress >= 80 ? 'high' : (d.progress >= 40 ? 'medium' : 'low');
+        const statClass = d.status==='Complete' ? 'status-complete' : (d.status==='Progress' ? 'status-progress' : 'status-menunggu');
+        return `
+        <tr class="row-accent ${d.status==='Complete' ? 'accent-green' : (d.status==='Progress' ? 'accent-blue' : 'accent-amber')}">
           <td><i class="${d.icon}" style="color:${d.color}; margin-right:8px"></i>${d.name}</td>
           <td>${d.fullName}</td>
-          <td><div class="progress-line"><div class="progress-line-fill" style="width:${d.progress}%; background:${d.color}"></div></div></td>
-          <td><span class="status-badge ${d.status==='Complete'?'approved': d.status==='Progress'?'inreview':'pending'}">${d.status}</span></td>
+          <td><div class="progress-line"><div class="progress-line-fill ${progClass}" style="width:${d.progress}%"></div></div></td>
+          <td><span class="status-badge ${statClass}">${statusLabel(d.status)}</span></td>
         </tr>
-      `).join('');
+      `}).join('');
       table.innerHTML = `<thead><tr>
         <th data-sort="name">OPD</th>
         <th data-sort="fullName">Nama Lengkap</th>
@@ -556,7 +594,7 @@ class DashboardManager {
       const list = dinasData
         .filter(d=> d.name.toLowerCase().includes((search?.value||'').toLowerCase()))
         .filter(d=> statusSel?.value ? d.status===statusSel.value : true);
-      const rows = [['OPD','Nama Lengkap','Progress','Status']].concat(list.map(d=> [d.name, d.fullName, d.progress, d.status]));
+      const rows = [['OPD','Nama Lengkap','Progress','Status']].concat(list.map(d=> [d.name, d.fullName, d.progress, statusLabel(d.status)]));
       const csv = rows.map(r=> r.map(x=>`"${x}"`).join(',')).join('\n');
       const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'status-dinas.csv'; a.click(); URL.revokeObjectURL(url);
@@ -570,7 +608,13 @@ class DashboardManager {
     const saveBtn = document.getElementById('set-save');
     const user = authHandler.getCurrentUser();
     if (profile && user) {
-      profile.innerHTML = `<div class="file-item"><div><div class="thread-title">${user.name}</div><div class="thread-meta">${user.position}</div></div><div>${user.role}</div></div>`;
+      const hasForm = !!document.getElementById('profile-photo-input');
+      if (!hasForm && profile.children.length === 0) {
+        const info = document.createElement('div');
+        info.className = 'file-item';
+        info.innerHTML = `<div><div class="thread-title">${user.name}</div><div class="thread-meta">${user.position}</div></div><div>${user.role}</div>`;
+        profile.appendChild(info);
+      }
     }
     if (saveBtn) saveBtn.onclick = () => {
       localStorage.setItem('sipandu_pref_theme', themeSelect?.value || 'light');
@@ -658,7 +702,7 @@ class DashboardManager {
     const totalDinas = dinasData.length;
     const completeData = dinasData.filter(d => d.status === 'Complete').length;
     const avgProgress = Math.round(dinasData.reduce((sum, d) => sum + d.progress, 0) / totalDinas);
-    const pendingReviews = dinasData.filter(d => d.status === 'Pending').length + 
+    const pendingReviews = dinasData.filter(d => d.status === 'Menunggu Persetujuan').length + 
                           dinasData.filter(d => d.status === 'Progress').length;
 
     return { totalDinas, completeData, avgProgress, pendingReviews };
@@ -817,17 +861,17 @@ let autoRefresh;
 
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
-  const initOnFe = path.startsWith('/fe/');
-  if (path.includes('dashboard.html') || initOnFe || path === '/dashboard') {
+  const backendPaths = ['/dashboard','/data-management','/forum','/calendar','/dinas-status','/settings'];
+  const initOnBackend = backendPaths.includes(path);
+  if (path.includes('dashboard.html') || initOnBackend) {
     dashboardManager = new DashboardManager();
     const routeMap = {
       '/dashboard': 'dashboard',
-      '/fe/datamanagement': 'data-management',
-      '/fe/reports': 'reports',
-      '/fe/forum': 'forum',
-      '/fe/calendar': 'calendar',
-      '/fe/dinas-status': 'dinas-status',
-      '/fe/settings': 'settings',
+      '/data-management': 'data-management',
+      '/forum': 'forum',
+      '/calendar': 'calendar',
+      '/dinas-status': 'dinas-status',
+      '/settings': 'settings',
     };
     const target = routeMap[path];
     if (target) {
@@ -835,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Start auto-refresh only on dashboard
-    if (!initOnFe || path === '/fe/dashboard' || path.includes('dashboard.html')) {
+    if (path === '/dashboard' || path.includes('dashboard.html')) {
       //autoRefresh = new AutoRefresh(dashboardManager);
       //autoRefresh.start();
     }

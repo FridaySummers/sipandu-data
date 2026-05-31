@@ -67,8 +67,31 @@ class AppState {
 // Initialize app state
 const appState = new AppState();
 
-// Sample Data - Dinas Information
-const dinasData = [
+// Ensure same-origin credentials for all fetch requests
+(function(){
+  try {
+    const _fetch = window.fetch;
+    window.fetch = function(resource, opts){
+      const options = opts || {};
+      if (!options.credentials) options.credentials = 'same-origin';
+      return _fetch(resource, options);
+    };
+  } catch(_){}
+})();
+
+// Set global dummy-data flag from meta
+(function(){
+  try {
+    const meta = document.querySelector('meta[name="disable-dummy"]');
+    const val = meta ? meta.content : 'true';
+    window.DISABLE_DUMMY_DATA = (val === 'true');
+  } catch(_) {
+    window.DISABLE_DUMMY_DATA = true;
+  }
+})();
+
+// Sample Data - Dinas Information (disabled if DISABLE_DUMMY_DATA)
+const dinasData = window.DISABLE_DUMMY_DATA ? [] : [
   {
     id: 1,
     name: 'Bappeda',
@@ -82,7 +105,7 @@ const dinasData = [
     id: 2,
     name: 'DPMPTSP',
     fullName: 'Dinas Penanaman Modal dan PTSP',
-    status: 'Pending',
+    status: 'Menunggu Persetujuan',
     progress: 25,
     icon: 'fas fa-handshake',
     color: '#ef4444'
@@ -145,9 +168,9 @@ const dinasData = [
     id: 9,
     name: 'Ketahanan Pangan',
     fullName: 'Dinas Ketahanan Pangan',
-    status: 'Pending',
+    status: 'Menunggu Persetujuan',
     progress: 35,
-    icon: 'fas fa-wheat',
+    icon: 'fas fa-wheat-awn',
     color: '#ef4444'
   },
   {
@@ -156,7 +179,7 @@ const dinasData = [
     fullName: 'Dinas Pariwisata',
     status: 'Complete',
     progress: 85,
-    icon: 'fas fa-map-marked-alt',
+    icon: 'fas fa-map-location-dot',
     color: '#22c55e'
   },
   {
@@ -172,7 +195,7 @@ const dinasData = [
     id: 12,
     name: 'Bapenda',
     fullName: 'Badan Pendapatan Daerah',
-    status: 'Pending',
+    status: 'Menunggu Persetujuan',
     progress: 20,
     icon: 'fas fa-coins',
     color: '#ef4444'
@@ -228,42 +251,175 @@ const Utils = {
         .toast {
           position: fixed;
           top: 20px;
-          right: 20px;
+          left: 50%;
+          transform: translate(-50%, -20px);
           background: white;
           padding: 12px 16px;
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           border-left: 4px solid;
           z-index: 10000;
-          transform: translateX(100%);
-          transition: transform 0.3s ease;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          opacity: 0;
         }
         .toast-success { border-left-color: #22c55e; }
         .toast-error { border-left-color: #ef4444; }
         .toast-info { border-left-color: #06b6d4; }
         .toast-content { display: flex; align-items: center; gap: 8px; }
-        .toast.show { transform: translateX(0); }
+        .toast.show { transform: translate(-50%, 0); opacity: 1; }
       `;
       document.head.appendChild(styles);
     }
 
+    // remove any existing toast to avoid double-dismiss
+    document.querySelectorAll('.toast').forEach(t => t.remove());
     document.body.appendChild(toast);
 
     // Show toast
-    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => toast.classList.add('show'), 50);
+
+    // Click to dismiss immediately
+    toast.onclick = () => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 200);
+    };
 
     // Remove toast
     setTimeout(() => {
+      if (!document.body.contains(toast)) return;
       toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      setTimeout(() => toast.remove(), 200);
+    }, 2500);
+  }
+  ,
+  // Confirm dialog with custom modal
+  confirm: (message, options = {}) => {
+    const {
+      title = 'Konfirmasi',
+      okText = 'Hapus',
+      cancelText = 'Batal',
+      variant = 'danger'
+    } = options;
+
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-modal">
+          <div class="confirm-header">
+            <i class="fas fa-${variant==='danger'?'trash':'question-circle'}"></i>
+            <span>${title}</span>
+          </div>
+          <div class="confirm-body">${message}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-secondary btn-sm confirm-cancel">${cancelText}</button>
+            <button class="btn ${variant==='danger'?'btn-pink':'btn-primary'} btn-sm confirm-ok">${okText}</button>
+          </div>
+        </div>`;
+
+      if (!document.getElementById('confirm-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'confirm-styles';
+        styles.textContent = `
+          .confirm-overlay{position:fixed;inset:0;background:rgba(17,24,39,0.5);display:flex;align-items:flex-start;justify-content:center;padding-top:60px;z-index:10000}
+          .confirm-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(17,24,39,0.25);width:420px;max-width:90vw;padding:16px}
+          .confirm-header{display:flex;align-items:center;gap:10px;font-weight:700;color:#111827;margin-bottom:8px}
+          .confirm-header i{color:#ef4444}
+          .confirm-body{color:#374151;margin:8px 2px 14px 2px}
+          .confirm-actions{display:flex;gap:8px;justify-content:flex-end}
+          .btn-pink{background:#f43f5e;border-color:#f43f5e;color:#fff}
+        `;
+        document.head.appendChild(styles);
+      }
+
+      document.body.appendChild(overlay);
+      const cleanup = () => { overlay.remove(); };
+      overlay.querySelector('.confirm-cancel').onclick = () => { cleanup(); resolve(false); };
+      overlay.querySelector('.confirm-ok').onclick = () => { cleanup(); resolve(true); };
+    });
   }
 };
+
+// expose Utils globally for pages that reference window.Utils
+if (typeof window !== 'undefined') {
+  window.Utils = Utils;
+}
+
+// Enhance native selects with rounded custom dropdowns
+document.addEventListener('DOMContentLoaded', () => {
+  window.CUSTOM_SELECT_ENABLED = true;
+  const enhanceSelect = (sel) => {
+    if (!sel || sel.dataset.csEnhanced === '1') return;
+    sel.style.display = 'none'; sel.dataset.csEnhanced = '1';
+    const wrap = document.createElement('div'); wrap.className = 'custom-select';
+    const ctrl = document.createElement('div'); ctrl.className = 'cs-control';
+    const val = document.createElement('div'); val.className = 'cs-value'; val.textContent = sel.options[sel.selectedIndex]?.text || sel.options[0]?.text || '';
+    const chev = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); chev.setAttribute('class','cs-chevron'); chev.setAttribute('viewBox','0 0 24 24'); chev.setAttribute('fill','none');
+    const inHero = !!sel.closest('.dm-hero');
+    chev.setAttribute('stroke', inHero ? '#ffffff' : '#64748b');
+    chev.setAttribute('stroke-width','2'); chev.setAttribute('stroke-linecap','round'); chev.setAttribute('stroke-linejoin','round'); chev.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+    ctrl.appendChild(val); ctrl.appendChild(chev);
+    const menu = document.createElement('div'); menu.className = 'cs-menu';
+    Array.from(sel.options).forEach((opt, idx) => {
+      const item = document.createElement('div'); item.className = 'cs-option' + (idx === sel.selectedIndex ? ' active' : ''); item.textContent = opt.text;
+      item.onclick = () => { sel.selectedIndex = idx; val.textContent = opt.text; menu.querySelectorAll('.cs-option').forEach(o=>o.classList.remove('active')); item.classList.add('active'); wrap.classList.remove('open'); sel.dispatchEvent(new Event('change', { bubbles:true })); };
+      menu.appendChild(item);
+    });
+    ctrl.onclick = () => { wrap.classList.toggle('open'); };
+    wrap.appendChild(ctrl); wrap.appendChild(menu);
+    // attach reference for future refresh
+    const refId = 'cs_' + Math.random().toString(36).slice(2);
+    wrap.id = refId; sel.dataset.csRef = refId;
+    sel.parentNode.insertBefore(wrap, sel);
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) wrap.classList.remove('open'); });
+  };
+  if (window.CUSTOM_SELECT_ENABLED) document.querySelectorAll('select').forEach(enhanceSelect);
+
+  // allow refreshing menu options dynamically
+  window.refreshCustomSelect = (sel) => {
+    if (!window.CUSTOM_SELECT_ENABLED) return;
+    if (!sel || !sel.dataset.csRef) return;
+    const wrap = document.getElementById(sel.dataset.csRef); if (!wrap) return;
+    const val = wrap.querySelector('.cs-value'); const menu = wrap.querySelector('.cs-menu');
+    if (!val || !menu) return;
+    // rebuild items
+    menu.innerHTML = '';
+    Array.from(sel.options).forEach((opt, idx) => {
+      const item = document.createElement('div');
+      item.className = 'cs-option' + (idx === sel.selectedIndex ? ' active' : '');
+      item.textContent = opt.text;
+      item.onclick = () => { sel.selectedIndex = idx; val.textContent = opt.text; menu.querySelectorAll('.cs-option').forEach(o=>o.classList.remove('active')); item.classList.add('active'); wrap.classList.remove('open'); sel.dispatchEvent(new Event('change', { bubbles:true })); };
+      menu.appendChild(item);
+    });
+    val.textContent = sel.options[sel.selectedIndex]?.text || sel.options[0]?.text || '';
+  };
+  window.enhanceCustomSelect = (sel) => { if (!window.CUSTOM_SELECT_ENABLED) return; try { enhanceSelect(sel); } catch(e){} };
+  window.revertCustomSelects = () => {
+    document.querySelectorAll('select[data-csEnhanced="1"]').forEach(sel => {
+      const ref = sel.dataset.csRef; const wrap = ref ? document.getElementById(ref) : null;
+      sel.style.display = ''; sel.dataset.csEnhanced = '';
+      if (wrap) wrap.remove(); sel.dataset.csRef = '';
+    });
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        if (!window.CUSTOM_SELECT_ENABLED) return;
+        if (node.tagName === 'SELECT') enhanceSelect(node);
+        if (node.querySelectorAll) node.querySelectorAll('select').forEach(enhanceSelect);
+      });
+    });
+  });
+  if (window.CUSTOM_SELECT_ENABLED) observer.observe(document.body, { childList: true, subtree: true });
+  if (!window.CUSTOM_SELECT_ENABLED) window.revertCustomSelects();
+});
 
 // Authentication Handler
 class AuthHandler {
   constructor() {
-    this.demoCredentials = [
+    this.demoCredentials = window.DISABLE_DUMMY_DATA ? [] : [
       { username: 'admin.bappeda', password: 'sipandu2025', role: 'admin', name: 'H. Agus Salim, S.Pi', position: 'Super Admin' },
       { username: 'admin.perdagangan', password: 'dinas123', role: 'dinas', name: 'Admin Perdagangan', position: 'Admin Dinas' },
       { username: 'user.demo', password: 'user123', role: 'user', name: 'User Demo', position: 'User' }
@@ -296,7 +452,7 @@ class AuthHandler {
   // Logout user
   logout() {
     appState.clearUser();
-    window.location.href = '/fe';
+    window.location.href = '/';
   }
 
   // Check if user is authenticated
@@ -323,21 +479,23 @@ class UIComponents {
     dinasGrid.innerHTML = dinasData.map(dinas => `
       <div class="dinas-card" data-dinas-id="${dinas.id}">
         <div class="dinas-header">
-          <div class="dinas-info">
-            <div class="dinas-icon" style="background-color: ${dinas.color}">
-              <i class="${dinas.icon}"></i>
-            </div>
-            <span class="dinas-name">${dinas.name}</span>
+          <div class="dinas-icon" style="background-color: ${dinas.color}15; color: ${dinas.color}; border: 1px solid ${dinas.color}30;">
+            <i class="${dinas.icon}"></i>
           </div>
-          <span class="status-badge status-${dinas.status.toLowerCase()}">${dinas.status}</span>
+          <span class="status-badge status-${dinas.status.toLowerCase().replace(/\s+/g, '-')}">${dinas.status}</span>
         </div>
-        <p class="dinas-description">${dinas.fullName}</p>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: ${dinas.progress}%; background-color: ${dinas.color}"></div>
+        <div class="dinas-body">
+          <h4 class="dinas-name">${dinas.name}</h4>
+          <p class="dinas-description">${dinas.fullName}</p>
         </div>
-        <div class="progress-text">
-          <span class="progress-label">Progress</span>
-          <span class="progress-percentage">${dinas.progress}%</span>
+        <div class="progress-section">
+          <div class="progress-text">
+            <span class="progress-label">Progress</span>
+            <span class="progress-percentage">${dinas.progress}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${dinas.progress}%; background-color: ${dinas.color}"></div>
+          </div>
         </div>
       </div>
     `).join('');
@@ -360,7 +518,7 @@ class UIComponents {
     const notificationList = document.getElementById('notification-list');
     if (!notificationList) return;
 
-    const notifications = [
+    const notifications = window.DISABLE_DUMMY_DATA ? [] : [
       {
         id: 1,
         title: 'Data Baru Masuk',
@@ -470,10 +628,10 @@ function initLoginPage() {
   const loginForm = document.getElementById('login-form');
   const togglePassword = document.getElementById('toggle-password');
   const passwordInput = document.getElementById('password');
-  const loadingOverlay = document.getElementById('loading-overlay');
-  const demoAccounts = document.querySelectorAll('.demo-account');
+  const roleSelect = document.getElementById('role');
+  const dinasGroup = document.getElementById('dinas-group');
+  const dinasSelect = document.getElementById('dinas');
 
-  // Toggle password visibility
   if (togglePassword && passwordInput) {
     togglePassword.addEventListener('click', () => {
       const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -484,47 +642,66 @@ function initLoginPage() {
     });
   }
 
-  // Demo account buttons
-  demoAccounts.forEach(account => {
-    const button = account.querySelector('.btn');
-    button.addEventListener('click', () => {
-      const username = account.dataset.username;
-      const password = account.dataset.password;
-      const role = account.dataset.role;
+  const updateDinasVisibility = () => {
+    const role = roleSelect ? roleSelect.value : '';
+    const show = role === 'dinas' || role === 'user';
+    if (dinasGroup) dinasGroup.style.display = show ? 'block' : 'none';
+    if (dinasSelect) {
+      if (show) {
+        dinasSelect.setAttribute('required', 'required');
+      } else {
+        dinasSelect.removeAttribute('required');
+        dinasSelect.selectedIndex = 0;
+      }
+      if (window.refreshCustomSelect) window.refreshCustomSelect(dinasSelect);
+    }
+  };
 
-      document.getElementById('username').value = username;
-      document.getElementById('password').value = password;
-      document.getElementById('role').value = role;
+  if (roleSelect) {
+    roleSelect.addEventListener('change', updateDinasVisibility);
+    updateDinasVisibility();
+  }
 
-      Utils.showToast('Demo credentials filled!', 'success');
-    });
-  });
-
-  // Login form submission
   if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    loginForm.addEventListener('submit', (e) => {
+      const emailInput = document.getElementById('email');
+      const roleVal = roleSelect ? roleSelect.value : '';
+      const needsDinas = roleVal === 'dinas' || roleVal === 'user';
+      let ok = true;
 
-      const formData = new FormData(loginForm);
-      const username = formData.get('username');
-      const password = formData.get('password');
-      const role = formData.get('role');
+      const mark = (el, good) => {
+        const group = el ? el.closest('.input-group') : null;
+        if (!group) return;
+        group.classList.toggle('error', !good);
+      };
 
-      // Show loading
-      if (loadingOverlay) loadingOverlay.style.display = 'flex';
+      if (emailInput) {
+        const val = (emailInput.value || '').trim();
+        const emailOk = /.+@.+\..+/.test(val);
+        mark(emailInput, emailOk);
+        ok = ok && emailOk;
+      }
+      if (passwordInput) {
+        const val = (passwordInput.value || '').trim();
+        const passOk = val.length >= 6;
+        mark(passwordInput, passOk);
+        ok = ok && passOk;
+      }
+      if (roleSelect) {
+        const roleOk = !!roleSelect.value;
+        mark(roleSelect, roleOk);
+        ok = ok && roleOk;
+      }
+      if (needsDinas && dinasSelect) {
+        const dinasOk = !!dinasSelect.value;
+        mark(dinasSelect, dinasOk);
+        ok = ok && dinasOk;
+      }
 
-      try {
-        const user = await authHandler.authenticate(username, password, role);
-        Utils.showToast(`Welcome, ${user.name}!`, 'success');
-
-        // Redirect to dashboard (served by PHP)
-        setTimeout(() => {
-          window.location.href = '/fe/dashboard';
-        }, 1000);
-      } catch (error) {
-        Utils.showToast('Login failed: ' + error.message, 'error');
-      } finally {
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
+      if (!ok) {
+        e.preventDefault();
+        Utils.showToast('Lengkapi form login terlebih dahulu', 'error');
+        try { emailInput?.focus(); } catch(_){ }
       }
     });
   }
@@ -559,9 +736,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Determine current page and initialize
   const pathname = window.location.pathname;
 
-  if (pathname.includes('login.html') || pathname.includes('/fe/login')) {
+  if (pathname.includes('login.html') || pathname === '/login') {
     initLoginPage();
-  } else if (pathname.includes('dashboard.html') || pathname.includes('/fe/dashboard') || pathname === ('/dashboard') {
+  } else if (pathname.includes('dashboard.html') || pathname === '/dashboard') {
     // Dashboard initialization will be handled by dashboard.js
     console.log('Dashboard page detected');
   } else {

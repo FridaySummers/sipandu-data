@@ -209,7 +209,7 @@ http://localhost:8000
 ### Current Status (Oktober 2025)
 - ✅ **Complete**: 6 dinas (50%)
 - 🟡 **Progress**: 3 dinas (25%) 
-- 🔴 **Pending**: 3 dinas (25%)
+- 🔴 **Menunggu persetujuan**: 3 dinas (25%)
 - 📊 **Average Progress**: 70%
 
 ### Performance Metrics
@@ -217,6 +217,22 @@ http://localhost:8000
 - ⚡ **Time to Interactive**: < 3s
 - 📱 **Mobile Lighthouse Score**: 95+
 - ♿ **Accessibility Score**: 90+
+
+---
+
+## 🧾 Catatan Perubahan 2025-12-03
+
+- Topbar disederhanakan: kolom pencarian dihapus, menu notifikasi dan user tetap ada.
+- Menu samping diubah: "Status Dinas" menjadi "Portal Dinas" beserta judul halaman terkait.
+- Tabel Manajemen Data: tombol aksi disusun sejajar secara horizontal dan ditambahkan tombol "Lihat" dengan ikon mata.
+- Tombol "Lihat" menampilkan detail pengajuan, informasi dinas terkait, serta riwayat perubahan jika tersedia.
+- Penambahan visual feedback saat hover pada semua tombol aksi dan penyesuaian responsivitas tata letak.
+
+### Penghapusan Fitur Laporan & Analisis
+- Menu "Laporan & Analisis" dan halaman terkait telah dihapus dari sistem.
+- Rute `/reports` dihapus, referensi UI di sidebar dibersihkan.
+- Inisialisasi JS untuk halaman laporan dihapus dari `public/js/dashboard.js`.
+- API data untuk dashboard (`/dashboard/data/monthly`, `/dashboard/data/dinas-comparison`, `/dashboard/data/category`) tetap dipertahankan untuk grafik pada Dashboard.
 
 ---
 

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('jumlah_target_data')->default(0); // Untuk KPI di Dashboard
             $table->timestamps();
         });
-    }   
+    }
 
     /**
      * Reverse the migrations.

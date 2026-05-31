@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Forum extends Model
 {
-    protected \ = [
+    protected $fillable = [
         'title',
         'content',
         'user_id',
         'category',
-        'status'
+        'status',
     ];
 
     public function user()
     {
-        return \->belongsTo(User::class);
+        return $this->belongsTo(User::class);
     }
 }

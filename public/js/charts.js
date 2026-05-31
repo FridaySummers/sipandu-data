@@ -31,34 +31,36 @@ class ChartManager {
       this.charts.monthlyProgress.destroy();
     }
 
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const empty = new Array(12).fill(0);
     const data = {
-      labels: ['Agustus', 'September', 'Oktober', 'November', 'Desember'],
+      labels: months,
       datasets: [
         {
-          label: 'Data Submission',
-          data: [45, 62, 75, 85, 90],
+          label: 'Data Masuk',
+          data: empty.slice(),
           borderColor: this.chartColors.primary,
           backgroundColor: this.hexToRgba(this.chartColors.primary, 0.1),
           borderWidth: 3,
           fill: true,
-          tension: 0.4,
+          tension: 0.3,
           pointBackgroundColor: this.chartColors.primary,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
-          pointRadius: 6
+          pointRadius: 5
         },
         {
-          label: 'Approval Rate',
-          data: [40, 58, 70, 80, 85],
+          label: 'Data yang Disetujui',
+          data: empty.slice(),
           borderColor: this.chartColors.success,
           backgroundColor: this.hexToRgba(this.chartColors.success, 0.1),
           borderWidth: 3,
           fill: true,
-          tension: 0.4,
+          tension: 0.3,
           pointBackgroundColor: this.chartColors.success,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
-          pointRadius: 6
+          pointRadius: 5
         }
       ]
     };
@@ -108,7 +110,7 @@ class ChartManager {
             display: true,
             title: {
               display: true,
-              text: 'Periode',
+              text: 'Bulan',
               font: {
                 family: 'Inter',
                 size: 12,
@@ -129,7 +131,7 @@ class ChartManager {
             display: true,
             title: {
               display: true,
-              text: 'Persentase (%)',
+              text: 'Jumlah Data (unit)',
               font: {
                 family: 'Inter',
                 size: 12,
@@ -137,7 +139,6 @@ class ChartManager {
               }
             },
             beginAtZero: true,
-            max: 100,
             grid: {
               color: 'rgba(0, 0, 0, 0.1)'
             },
@@ -146,9 +147,7 @@ class ChartManager {
                 family: 'Inter',
                 size: 11
               },
-              callback: function(value) {
-                return value + '%';
-              }
+              precision: 0
             }
           }
         },
@@ -160,6 +159,23 @@ class ChartManager {
     };
 
     this.charts.monthlyProgress = new Chart(ctx, config);
+    const yearSel = document.getElementById('mp-year');
+    const loadData = async (year) => {
+      try {
+        const resp = await fetch(`/dashboard/data/monthly?year=${year}`);
+        const json = await resp.json();
+        const s = json.submissions || empty;
+        const a = json.approvals || empty;
+        this.charts.monthlyProgress.data.datasets[0].data = s;
+        this.charts.monthlyProgress.data.datasets[1].data = a;
+        this.charts.monthlyProgress.update();
+      } catch(err) {
+        console.error('Failed to load monthly data', err);
+      }
+    };
+    const initYear = yearSel ? yearSel.value : new Date().getFullYear();
+    loadData(initYear);
+    if (yearSel) yearSel.addEventListener('change', ()=> loadData(yearSel.value));
   }
 
   // Dinas Status Chart (Horizontal Bar Chart)
@@ -171,16 +187,13 @@ class ChartManager {
       this.charts.dinasStatus.destroy();
     }
 
-    // Sort dinas data by progress
-    const sortedDinas = [...dinasData].sort((a, b) => b.progress - a.progress);
-
     const data = {
-      labels: sortedDinas.map(d => d.name),
+      labels: [],
       datasets: [{
-        label: 'Progress (%)',
-        data: sortedDinas.map(d => d.progress),
-        backgroundColor: sortedDinas.map(d => d.color),
-        borderColor: sortedDinas.map(d => d.color),
+        label: 'Jumlah Data',
+        data: [],
+        backgroundColor: '#2563eb',
+        borderColor: '#2563eb',
         borderWidth: 1,
         borderRadius: 4,
         borderSkipped: false
@@ -211,7 +224,7 @@ class ChartManager {
             },
             callbacks: {
               label: function(context) {
-                return `${context.label}: ${context.parsed.x}%`;
+                return `${context.label}: ${context.parsed.x}`;
               }
             }
           }
@@ -219,7 +232,6 @@ class ChartManager {
         scales: {
           x: {
             beginAtZero: true,
-            max: 100,
             grid: {
               color: 'rgba(0, 0, 0, 0.1)'
             },
@@ -227,9 +239,6 @@ class ChartManager {
               font: {
                 family: 'Inter',
                 size: 11
-              },
-              callback: function(value) {
-                return value + '%';
               }
             }
           },
@@ -255,6 +264,23 @@ class ChartManager {
     };
 
     this.charts.dinasStatus = new Chart(ctx, config);
+    const yearSel = document.getElementById('mp-year');
+    const loadData = async (year) => {
+      try {
+        const resp = await fetch(`/dashboard/data/dinas-comparison?year=${year}`);
+        const json = await resp.json();
+        const labels = json.labels || [];
+        const vals = json.values || [];
+        this.charts.dinasStatus.data.labels = labels;
+        this.charts.dinasStatus.data.datasets[0].data = vals;
+        this.charts.dinasStatus.update();
+      } catch(err) {
+        console.error('Failed to load dinas comparison', err);
+      }
+    };
+    const initYear = yearSel ? yearSel.value : new Date().getFullYear();
+    loadData(initYear);
+    if (yearSel) yearSel.addEventListener('change', ()=> loadData(yearSel.value));
   }
 
   // Data Category Chart (Doughnut Chart)
@@ -266,19 +292,13 @@ class ChartManager {
       this.charts.dataCategory.destroy();
     }
 
-    const categories = [
-      { name: 'Ekonomi', value: 35, color: this.chartColors.primary },
-      { name: 'SDA', value: 30, color: this.chartColors.success },
-      { name: 'Lingkungan', value: 15, color: this.chartColors.info },
-      { name: 'Keuangan', value: 10, color: this.chartColors.warning },
-      { name: 'Lainnya', value: 10, color: this.chartColors.gray }
-    ];
-
     const data = {
-      labels: categories.map(c => c.name),
+      labels: [],
       datasets: [{
-        data: categories.map(c => c.value),
-        backgroundColor: categories.map(c => c.color),
+        data: [],
+        backgroundColor: [
+          '#1d4ed8','#22c55e','#f59e0b','#ef4444','#06b6d4','#7c3aed','#10b981','#f43f5e','#14b8a6','#a855f7','#94a3b8','#e11d48'
+        ],
         borderColor: '#ffffff',
         borderWidth: 2,
         hoverOffset: 8
@@ -317,7 +337,7 @@ class ChartManager {
             },
             callbacks: {
               label: function(context) {
-                return `${context.label}: ${context.parsed}%`;
+                return `${context.label}: ${context.parsed}`;
               }
             }
           }
@@ -331,6 +351,23 @@ class ChartManager {
     };
 
     this.charts.dataCategory = new Chart(ctx, config);
+    const yearSel = document.getElementById('mp-year');
+    const loadData = async (year) => {
+      try {
+        const resp = await fetch(`/dashboard/data/category?year=${year}`);
+        const json = await resp.json();
+        const labels = json.labels || [];
+        const vals = json.values || [];
+        this.charts.dataCategory.data.labels = labels;
+        this.charts.dataCategory.data.datasets[0].data = vals;
+        this.charts.dataCategory.update();
+      } catch(err) {
+        console.error('Failed to load category data', err);
+      }
+    };
+    const initYear = yearSel ? yearSel.value : new Date().getFullYear();
+    loadData(initYear);
+    if (yearSel) yearSel.addEventListener('change', ()=> loadData(yearSel.value));
   }
 
   // Utility function to convert hex to rgba
@@ -384,7 +421,7 @@ class ChartManager {
   getChartStats() {
     const completeCount = dinasData.filter(d => d.status === 'Complete').length;
     const progressCount = dinasData.filter(d => d.status === 'Progress').length;
-    const pendingCount = dinasData.filter(d => d.status === 'Pending').length;
+    const pendingCount = dinasData.filter(d => d.status === 'Menunggu Persetujuan').length;
     const avgProgress = Math.round(dinasData.reduce((sum, d) => sum + d.progress, 0) / dinasData.length);
 
     return {
